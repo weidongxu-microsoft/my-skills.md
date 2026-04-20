@@ -12,6 +12,8 @@ Use this skill only when all of the following are true:
 
 Do not use this skill for draft or unrelated pull requests.
 
+Do not use sub-agent or parallel workflow, for tasks that potentially involve steps on local repository, as the local repository is a shared resource and may cause conflicts if multiple agents operate on it simultaneously. Always complete the review and merge process for one PR before starting another.
+
 ## Working directory
 
 Use c:/github_lab/azure-sdk-for-java as the local repository.
@@ -25,13 +27,12 @@ Copy this checklist and update it as work progresses:
 ```text
 Automated PR review progress
 - [ ] Confirm the PR matches the target pattern and is non-draft
-- [ ] Ensure the local repo exists and main is current
-- [ ] Check out the PR branch locally
 - [ ] Inspect mergeability
-- [ ] If mergeable_state is dirty, merge main into the branch
-- [ ] Resolve all conflicts and verify no conflict markers remain
-- [ ] Commit and push the fix
 ```
+
+## Mergability
+
+If the branch of PR has conflict with main branch ("mergeable_state" is "dirty"), refer to [resolve-merge-conflict](./resolve-merge-conflict.md) to resolve the conflict.
 
 ## Default process
 
