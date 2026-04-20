@@ -19,12 +19,13 @@ Automated PR review progress
 
 1. Confirm the PR is eligible.
 2. Ensure the local clone exists and update main.
-3. Check out the PR branch.
-4. If the PR merge state is dirty, merge origin/main into the PR branch.
-5. Resolve conflicts carefully.
-6. Verify the branch is conflict-free.
-7. Commit and push.
-8. Wait for CI to complete (pass or error).
+3. Fetch and checkout latest main.
+4. Check out the PR branch.
+5. If the PR merge state is dirty, merge origin/main into the PR branch.
+6. Resolve conflicts carefully.
+7. Verify the branch is conflict-free.
+8. Commit and push.
+9. Wait for CI to complete (pass or error).
 
 ## Default commands
 
@@ -49,11 +50,3 @@ gh pr checks <pr-number> --watch --fail-fast
 - Preserve the generated PR intent while keeping compatibility with main.
 - Before committing, verify there are no remaining merge markers such as <<<<<<<, =======, or >>>>>>>.
 - Commit and push only after the working tree is fully resolved.
-
-## Validation loop
-
-1. Check PR state.
-2. Merge main only when needed.
-3. Verify there are no unmerged files.
-4. Commit and push.
-6. Wait for CI to complete (pass or error) using `gh pr checks <pr-number> --watch`.
