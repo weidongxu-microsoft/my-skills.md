@@ -39,19 +39,19 @@ az rest --method get --url "https://dev.azure.com/azure-sdk/<project-id>/_apis/b
 gh pr checks <pr-number> --watch --fail-fast
 ```
 
-## Update versions in POM
+# Update versions in POM
 
-### Process
+## Process
 
 1. Ensure the local clone exists and update main.
 2. Fetch and checkout latest main.
 3. Check out the PR branch.
 4. Merge origin/main into the PR branch.
-5. Run `python eng/versioning/update_versions.py --sr`. It should update the POM in project.
-6. Verify that only "pom.xml" file get updated.
+5. Run `python eng/versioning/update_versions.py --sr`. It should update the POM in the project.
+6. Verify that only the "pom.xml" file gets updated.
 7. Commit and push.
 
-### Commands
+## Commands
 
 ```bash
 if [ ! -d c:/github_lab/azure-sdk-for-java ]; then
@@ -72,21 +72,21 @@ git push
 gh pr checks <pr-number> --watch --fail-fast
 ```
 
-## Investigate code generation
+# Investigate code generation
 
-### Process
+## Process
 
 1. Ensure the local clone exists and update main.
 2. Fetch and checkout latest main.
 3. Check out the PR branch.
 4. Merge origin/main into the PR branch.
-5. Diff with main to find the project folder, it should be in the form of `sdk/<service>/<module>/`.
-6. Run `tsp-client update` in project folder. This should re-generate the Java files.
-6. Search the diff of re-generated code. See whether there is change of value in the assigment of `this.apiVersion = <api-version>` (change from `<current-api-version>` to `<latest-api-version>`) in a `##ClientImpl.java` file.
-7. If there is such diff, check the PR to see if there is already comment like this: "The latest TypeSpec api-version is <latest-api-version>, but the specified api-version in this release request was <current-api-version>. Please pin api-version in TypeSpec to <current-api-version>". If no such comment, add one to remind the author.
-8. If there is no such diff on the assignment of `api-version`, PAUSE AND ASK USER TO DECIDE WHAT TO DO.
+5. Diff with main to find the project folder; it should be in the form of `sdk/<service>/<module>/`.
+6. Run `tsp-client update` in the project folder. This should regenerate the Java files.
+7. Search the regenerated code diff. Check whether there is a change in the assignment of `this.apiVersion = <api-version>` (from `<current-api-version>` to `<latest-api-version>`) in a `##ClientImpl.java` file.
+8. If there is such a diff, check the PR to see if there is already a comment like this: "The latest TypeSpec api-version is <latest-api-version>, but the specified api-version in this release request was <current-api-version>. Please pin api-version in TypeSpec tspconfig.yaml to <current-api-version>". If no such comment exists, add one to remind the author.
+9. If there is no such diff on the assignment of `api-version`, STOP AND ASK USER TO DECIDE WHAT TO DO.
 
-### Commands
+## Commands
 
 ```bash
 # Steps 1-4: Clone, update main, checkout PR branch, merge main

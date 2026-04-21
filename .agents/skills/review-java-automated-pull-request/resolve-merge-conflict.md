@@ -46,7 +46,7 @@ gh pr checks <pr-number> --watch --fail-fast
 
 ## Conflict resolution rules
 
-- The conflict file should typically only be the "eng/versioning/version_client.txt". If you see lots of conflict files, PAUSE AND ASK USER.
+- The conflict file should typically only be the "eng/versioning/version_client.txt". If you see lots of conflict files, STOP AND ASK USER.
 - Resolve only the conflicts needed to unblock the PR branch.
 - Preserve the generated PR intent while keeping compatibility with main.
 - Before committing, verify there are no remaining merge markers such as <<<<<<<, =======, or >>>>>>>.

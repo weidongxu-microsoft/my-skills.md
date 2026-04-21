@@ -37,10 +37,10 @@ Automated PR review progress
 gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --json number,title,isDraft,mergeable,mergeStateStatus"
 ```
 
-## Mergability
+## Mergeability is "dirty"
 
-If the branch of PR has conflict with main branch ("mergeable_state" is "dirty"), refer to [resolve-merge-conflict](./resolve-merge-conflict.md) to resolve the conflict.
+If the PR branch has conflicts with the main branch ("mergeable_state" is "dirty"), refer to [resolve-merge-conflict](./resolve-merge-conflict.md) to resolve them.
 
-## Checks
+## Failed checks
 
 If the branch of PR has failed checks, refer to [inspect-checks](./inspect-checks.md) to investigate the failure.
