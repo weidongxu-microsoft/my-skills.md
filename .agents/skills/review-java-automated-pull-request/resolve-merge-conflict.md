@@ -5,8 +5,7 @@
 Copy this checklist and update it as work progresses:
 
 ```text
-Automated PR review progress
-- [ ] Confirm the PR matches the target pattern and is non-draft
+Resolve merge conflict progress
 - [ ] Ensure the local repo exists and main is current
 - [ ] Check out the PR branch locally
 - [ ] If mergeable_state is dirty, merge main into the branch
@@ -17,15 +16,14 @@ Automated PR review progress
 
 ## Default process
 
-1. Confirm the PR is eligible.
-2. Ensure the local clone exists and update main.
-3. Fetch and checkout latest main.
-4. Check out the PR branch.
-5. If the PR merge state is dirty, merge origin/main into the PR branch.
-6. Resolve conflicts carefully.
-7. Verify the branch is conflict-free.
-8. Commit and push.
-9. Wait for CI to complete (pass or error).
+1. Ensure the local clone exists and update main.
+2. Fetch and checkout latest main.
+3. Check out the PR branch.
+4. If the PR merge state is dirty, merge origin/main into the PR branch.
+5. Resolve conflicts carefully.
+6. Verify the branch is conflict-free.
+7. Commit and push.
+8. Wait for CI to complete (pass or error).
 
 ## Default commands
 

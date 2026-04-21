@@ -1,11 +1,11 @@
-# Inspect Checks
+# Inspect Failed Checks
 
 ## Workflow
 
 Copy this checklist and update it as work progresses:
 
 ```text
-Automated PR review progress
+Inspect failed checks progress
 - [ ] Check CI status for the PR
 - [ ] If "Analyze" job fails on "Verify versions in POM file", follow [Update versions in POM](#update-versions-in-pom)
 - [ ] If "Analyze" job fails on "Verify Swagger and TypeSpec Code Generation", follow [Investigate code generation](#investigate-code-generation)
@@ -15,17 +15,15 @@ Automated PR review progress
 
 ## Default process
 
-1. Confirm the PR is eligible.
-2. Check CI status for the PR.
-3. If the "Analyze" job fails on the "Verify versions in POM file" step, follow [Update versions in POM](#update-versions-in-pom).
-4. If "Analyze" job fails on "Verify Swagger and TypeSpec Code Generation", follow [Investigate code generation](#investigate-code-generation).
-5. Wait for CI to complete (pass or error).
+1. Check CI status for the PR.
+2. If the "Analyze" job fails on the "Verify versions in POM file" step, follow [Update versions in POM](#update-versions-in-pom).
+3. If "Analyze" job fails on "Verify Swagger and TypeSpec Code Generation", follow [Investigate code generation](#investigate-code-generation).
+4. Wait for CI to complete (pass or error).
 
 ## Default commands
 
 ```bash
-cd c:/github_lab/azure-sdk-for-java
-gh pr checks <pr-number> --json name,state,link
+gh pr checks <pr-number> --json name,state,link --repo Azure/azure-sdk-for-java
 
 # Get failed steps from Azure DevOps build timeline
 az rest --method get --url "https://dev.azure.com/azure-sdk/<project-id>/_apis/build/builds/<build-id>/timeline?api-version=7.1" --query "records[?result=='failed'].{name: name, type: type, result: result, log: log}" -o json
@@ -36,10 +34,10 @@ az rest --method get --url "https://dev.azure.com/azure-sdk/<project-id>/_apis/b
 # Run sub-process
 
 # Wait for CI to complete
-gh pr checks <pr-number> --watch --fail-fast
+gh pr checks <pr-number> --watch --fail-fast --repo Azure/azure-sdk-for-java
 ```
 
-# Update versions in POM
+# Update Versions in POM
 
 ## Process
 
@@ -72,7 +70,7 @@ git push
 gh pr checks <pr-number> --watch --fail-fast
 ```
 
-# Investigate code generation
+# Investigate Code Generation
 
 ## Process
 
@@ -115,5 +113,5 @@ git diff -- "sdk/<service>/<module>/**/*ClientImpl.java" | grep "this.apiVersion
 # Step 7 continued: Check existing PR comments
 gh pr view <pr-number> --comments --json comments --jq '.comments[].body'
 
-# Step 8: If no api-version diff, PAUSE AND ASK USER
+# Step 8: If no api-version diff, STOP AND ASK USER
 ```

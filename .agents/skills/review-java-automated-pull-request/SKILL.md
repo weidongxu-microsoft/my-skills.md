@@ -12,7 +12,9 @@ Use this skill only when all of the following are true:
 
 Do not use this skill for draft or unrelated pull requests.
 
-Do not use sub-agent or parallel workflow, for tasks that potentially involve steps on local repository, as the local repository is a shared resource and may cause conflicts if multiple agents operate on it simultaneously. Always complete the review and merge process for one PR before starting another.
+Do not merge the PR.
+
+Do not use a sub-agent or parallel workflow for tasks that involve the local repository, as it is a shared resource and may cause conflicts if multiple agents operate on it simultaneously. Always complete the review process for one PR before starting another.
 
 ## Working directory
 
@@ -27,6 +29,7 @@ Copy this checklist and update it as work progresses:
 ```text
 Automated PR review progress
 - [ ] Confirm the PR matches the target pattern and is non-draft
+- [ ] Verify Java package name for new library
 - [ ] Inspect mergeability
 - [ ] Inspect checks (CI results)
 ```
@@ -34,13 +37,17 @@ Automated PR review progress
 ## Command to search for eligible PRs
 
 ```bash
-gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --json number,title,isDraft,mergeable,mergeStateStatus"
+gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --json number,title,isDraft,mergeable,mergeStateStatus" --repo Azure/azure-sdk-for-java
 ```
+
+## Verify Java package name for new library
+
+If the PR contains a new `sdk/<service>/<module>/pom.xml` file, rather than a modification of an existing one, refer to [Verify Java Package Name](./verify-java-package-name.md) to verify the Java package name.
 
 ## Mergeability is "dirty"
 
-If the PR branch has conflicts with the main branch ("mergeable_state" is "dirty"), refer to [resolve-merge-conflict](./resolve-merge-conflict.md) to resolve them.
+If the PR branch has conflicts with the main branch ("mergeable_state" is "dirty"), refer to [Resolve Merge Conflict](./resolve-merge-conflict.md) to resolve them.
 
 ## Failed checks
 
-If the branch of PR has failed checks, refer to [inspect-checks](./inspect-checks.md) to investigate the failure.
+If the branch of PR has failed checks, refer to [Inspect Failed Checks](./inspect-failed-checks.md) to investigate the failure.
