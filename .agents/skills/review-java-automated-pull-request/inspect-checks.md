@@ -32,6 +32,11 @@ az rest --method get --url "https://dev.azure.com/azure-sdk/<project-id>/_apis/b
 
 # Get log for a specific failed step
 az rest --method get --url "https://dev.azure.com/azure-sdk/<project-id>/_apis/build/builds/<build-id>/logs/<log-id>"
+
+# Run sub-process
+
+# Wait for CI to complete
+gh pr checks <pr-number> --watch --fail-fast
 ```
 
 ## Update versions in POM
@@ -78,7 +83,7 @@ gh pr checks <pr-number> --watch --fail-fast
 5. Diff with main to find the project folder, it should be in the form of `sdk/<service>/<module>/`.
 6. Run `tsp-client update` in project folder. This should re-generate the Java files.
 6. Search the diff of re-generated code. See whether there is change of value in the assigment of `this.apiVersion = <api-version>` (change from `<current-api-version>` to `<latest-api-version>`) in a `##ClientImpl.java` file.
-7. If there is such diff, check the PR to see if there is already comment like this: "The latest TypeSpec api-version is <latest-api-version>, but the specified api-version in this release request was <current-api-version>. Please pin api-version in TypeSpec to <current-api-version>".
+7. If there is such diff, check the PR to see if there is already comment like this: "The latest TypeSpec api-version is <latest-api-version>, but the specified api-version in this release request was <current-api-version>. Please pin api-version in TypeSpec to <current-api-version>". If no such comment, add one to remind the author.
 8. If there is no such diff on the assignment of `api-version`, PAUSE AND ASK USER TO DECIDE WHAT TO DO.
 
 ### Commands

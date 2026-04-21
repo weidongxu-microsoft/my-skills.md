@@ -1,6 +1,6 @@
 ---
 name: review-java-automated-pull-request
-description: Reviews and updates non-draft automated pull requests for Azure Java management libraries in azure-sdk-for-java. Use when a pull request title contains [AutoPR azure-resourcemanager-], especially to inspect the PR, sync with main, resolve merge conflicts, commit, and push.
+description: Reviews and updates non-draft automated pull requests for Azure Java management libraries in azure-sdk-for-java. Use when a pull request title contains [AutoPR azure-resourcemanager-, especially to inspect the PR, sync with main, resolve merge conflicts, commit, and push.
 ---
 
 # Review Java Automated Pull Request
@@ -8,7 +8,7 @@ description: Reviews and updates non-draft automated pull requests for Azure Jav
 Use this skill only when all of the following are true:
 - The repository is Azure/azure-sdk-for-java.
 - The pull request is not a draft.
-- The title contains `[AutoPR azure-resourcemanager-]`.
+- The title contains `[AutoPR azure-resourcemanager-`.
 
 Do not use this skill for draft or unrelated pull requests.
 
