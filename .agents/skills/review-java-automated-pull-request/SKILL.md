@@ -37,7 +37,10 @@ Automated PR review progress
 ## Command to search for eligible PRs
 
 ```bash
-gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --json number,title,isDraft,mergeable,mergeStateStatus" --repo Azure/azure-sdk-for-java
+gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --json number,title,isDraft,mergeable,mergeStateStatus --repo Azure/azure-sdk-for-java
+
+# List PRs with failed checks
+gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false status:failed" --json number,title  --repo Azure/azure-sdk-for-java
 ```
 
 ## Verify Java package name for new library
