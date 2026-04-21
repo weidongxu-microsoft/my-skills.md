@@ -31,6 +31,12 @@ Automated PR review progress
 - [ ] Inspect checks (CI results)
 ```
 
+## Command to search for eligible PRs
+
+```bash
+gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --json number,title,isDraft,mergeable,mergeStateStatus"
+```
+
 ## Mergability
 
 If the branch of PR has conflict with main branch ("mergeable_state" is "dirty"), refer to [resolve-merge-conflict](./resolve-merge-conflict.md) to resolve the conflict.
