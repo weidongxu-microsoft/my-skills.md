@@ -29,15 +29,26 @@ Copy this checklist and update it as work progresses:
 ```text
 Automated PR review progress
 - [ ] Confirm the PR matches the target pattern and is non-draft
+- [ ] Check review progress from memory (if HEAD SHA matches, skip it and move to the next PR)
 - [ ] Verify Java package name for new library
 - [ ] Inspect mergeability
 - [ ] Inspect checks (CI results)
 ```
 
+## Memorize review progress
+
+Recall memory "pr-reviewed" to get the review progress. It should contain a list of PR numbers, the HEAD SHA of the commit reviewed, and the review status.
+
+After reviewing all PRs, save a final summary to memory "pr-reviewed" with the review progress. It should persist
+- PR number
+- HEAD SHA of the PR
+- review status (e.g. "ready for merge", "pending peer review", "has check failures", "has merge conflicts")
+
 ## Command to search for eligible PRs
 
 ```bash
-gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --json number,title,isDraft,mergeable,mergeStateStatus --repo Azure/azure-sdk-for-java
+# headRefOid is the HEAD SHA of the PR
+gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --json number,title,headRefOid,isDraft,mergeable,mergeStateStatus --repo Azure/azure-sdk-for-java
 
 # List PRs with failed checks
 gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false status:failed" --json number,title  --repo Azure/azure-sdk-for-java
