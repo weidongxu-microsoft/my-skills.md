@@ -30,6 +30,7 @@ Increment versions PR merge progress
 - [ ] Confirm all CI checks pass
 - [ ] Confirm only allowed files are modified
 - [ ] Resolve all Copilot review comments
+- [ ] Confirm no unresolved review comments from human users
 - [ ] Approve and merge the PR
 ```
 
@@ -101,7 +102,13 @@ mutation {
 
 Resolve all unresolved threads where the first comment's author login is `Copilot` or `copilot-pull-request-reviewer[bot]`.
 
-## Step 4: Approve and merge the PR
+## Step 4: Confirm no unresolved comments from human users
+
+After resolving Copilot threads, check whether any review threads from human users remain unresolved. Use the same GraphQL query from Step 3 and inspect all threads where `isResolved` is `false` and the author login is **not** `Copilot`, `copilot-pull-request-reviewer`, or any known bot (logins ending in `[bot]`).
+
+If any such thread exists, skip this PR and report the unresolved human comment — do not merge it.
+
+## Step 5: Approve and merge the PR
 
 Approve the PR:
 
