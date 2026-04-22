@@ -109,9 +109,11 @@ Approve the PR:
 gh pr review <PR_NUMBER> --approve --repo Azure/azure-sdk-for-java
 ```
 
-Merge the PR using squash merge:
+Merge the PR using squash merge. Try a direct merge first; if branch protection blocks it, fall back to `--auto`:
 
 ```bash
+gh pr merge <PR_NUMBER> --squash --repo Azure/azure-sdk-for-java
+# If blocked by branch protection, use:
 gh pr merge <PR_NUMBER> --squash --auto --repo Azure/azure-sdk-for-java
 ```
 
