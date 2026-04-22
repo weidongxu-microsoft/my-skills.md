@@ -113,7 +113,7 @@ PS: this script can take a while to run. If you wait for the command, wait a max
 
 See [Solve Compile Error](./solve-compile-error.md) for common compile errors and mitigation.
 
-If you work on it for a while, but does not make progress, pause and summarize the errors.
+If you work on it for a while, but do not make progress, pause and summarize the errors.
 
 ### Modify "module-info.java"
 
@@ -140,10 +140,10 @@ See [Solve Revapi Error](./solve-revapi-error.md) for mitigation.
 
 The goal here is not to suppress all errors so that build can pass. It is to suppress the few breaks that is allowed (e.g. move Paged model to implementation package, remove ctor and setter for read-only model, change of base class). In the meantime, figure out some breaks that can easily be mitigated by a rename in "client.tsp", and fix those breaks instead of suppressing them.
 
-It is known that there will be some hard to mitigate breaks, e.g. enum changed to ExpandableStringEnum, that need decision from user on how to proceed. Do report these breaks that does not have clear mitigation, and wait for user decision before proceeding.
+It is known that there will be some hard to mitigate breaks, e.g. enum changed to ExpandableStringEnum, that need decision from user on how to proceed. Do report these breaks that do not have clear mitigation, and wait for user decision before proceeding.
 
-When you finished this step, pause and output report on remaining errors.
-Use the `git diff` with "main" branch, to provide the details on what you think be the cause of the error.
+When you finish this step, pause and output report on remaining errors.
+Use the `git diff` with "main" branch, to provide the details on what you think is the cause of the error.
 
 ### Compare client APIs
 
