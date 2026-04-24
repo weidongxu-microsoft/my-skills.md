@@ -12,6 +12,8 @@ Use this skill only when all of the following are true:
 
 Do not use this skill for draft or unrelated pull requests.
 
+Do not process any further if the PR author is not `azure-sdk`.
+
 Do not merge the PR.
 
 Do not use a sub-agent or parallel workflow for tasks that involve the local repository, as it is a shared resource and may cause conflicts if multiple agents operate on it simultaneously. Always complete the review process for one PR before starting another.
@@ -30,8 +32,8 @@ Copy this checklist and update it as work progresses:
 Automated PR review progress
 - [ ] Confirm the PR matches the target pattern and is non-draft
 - [ ] Confirm PR author is `azure-sdk`
-- [ ] Confirm PR description contains `Release Plan: <url>` (warn if missing, continue)
 - [ ] Check review progress from memory (if HEAD SHA matches, skip it and move to the next PR)
+- [ ] Check PR description contains `Release Plan: <url>` (warn if missing, continue)
 - [ ] Verify Java package name for new library
 - [ ] Inspect mergeability
 - [ ] Inspect checks (CI results)
@@ -66,7 +68,7 @@ gh pr view <PR_NUMBER> --json author --repo Azure/azure-sdk-for-java --jq '.auth
 
 If the author is not `azure-sdk`, skip this PR and report the unexpected author — do not process it further.
 
-## Confirm PR description contains a Release Plan link
+## Check PR description contains a Release Plan link
 
 Retrieve the PR body and check for a line matching `Release Plan: <url>`:
 
