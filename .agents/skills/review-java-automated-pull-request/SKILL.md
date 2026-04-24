@@ -29,6 +29,8 @@ Copy this checklist and update it as work progresses:
 ```text
 Automated PR review progress
 - [ ] Confirm the PR matches the target pattern and is non-draft
+- [ ] Confirm PR author is `azure-sdk`
+- [ ] Confirm PR description contains `Release Plan: <url>` (warn if missing, continue)
 - [ ] Check review progress from memory (if HEAD SHA matches, skip it and move to the next PR)
 - [ ] Verify Java package name for new library
 - [ ] Inspect mergeability
@@ -53,6 +55,26 @@ gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --
 # List PRs with failed checks
 gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false status:failed" --json number,title  --repo Azure/azure-sdk-for-java
 ```
+
+## Confirm PR author is `azure-sdk`
+
+Retrieve the PR author and verify it is `azure-sdk`:
+
+```bash
+gh pr view <PR_NUMBER> --json author --repo Azure/azure-sdk-for-java --jq '.author.login'
+```
+
+If the author is not `azure-sdk`, skip this PR and report the unexpected author — do not process it further.
+
+## Confirm PR description contains a Release Plan link
+
+Retrieve the PR body and check for a line matching `Release Plan: <url>`:
+
+```bash
+gh pr view <PR_NUMBER> --json body --repo Azure/azure-sdk-for-java --jq '.body'
+```
+
+If no `Release Plan:` line is found in the description, log a warning (e.g. "WARNING: No Release Plan link found in PR #<PR_NUMBER> description") and continue the review process.
 
 ## Verify Java package name for new library
 
