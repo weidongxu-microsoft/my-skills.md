@@ -56,7 +56,15 @@ gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false sta
 
 ## Verify Java package name for new library
 
-If the PR contains a new `sdk/<service>/<module>/pom.xml` file, rather than a modification of an existing one, refer to [Verify Java Package Name](./verify-java-package-name.md) to verify the Java package name.
+Use the following command to check whether the PR adds a new `pom.xml` or modifies an existing one:
+
+```bash
+gh api repos/Azure/azure-sdk-for-java/pulls/<PR_NUMBER>/files \
+  --jq '.[] | select(.filename | endswith("pom.xml")) | {filename, status}'
+```
+
+If `status` is `"added"`, the pom.xml is new — refer to [Verify Java Package Name](./verify-java-package-name.md) to verify the Java package name.
+If `status` is `"modified"`, it is an existing library update and no package name verification is needed.
 
 ## Mergeability is "dirty"
 
