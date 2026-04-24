@@ -27,6 +27,7 @@ Copy this checklist and update it as work progresses:
 ```text
 Increment versions PR merge progress
 - [ ] Find eligible PRs (title contains "Increment versions", non-draft)
+- [ ] Confirm PR author is `azure-sdk`
 - [ ] Confirm all CI checks pass
 - [ ] Confirm only allowed files are modified
 - [ ] Resolve all Copilot review comments
@@ -36,7 +37,17 @@ Increment versions PR merge progress
 
 Process each eligible PR one at a time following the steps below.
 
-## Step 1: Confirm all CI checks pass
+## Step 1: Confirm PR author is `azure-sdk`
+
+Retrieve the PR author and verify it is `azure-sdk`:
+
+```bash
+gh pr view <PR_NUMBER> --json author --repo Azure/azure-sdk-for-java --jq '.author.login'
+```
+
+If the author is not `azure-sdk`, skip this PR and report the unexpected author — do not merge it.
+
+## Step 2: Confirm all CI checks pass
 
 Retrieve the check runs for the PR's head commit:
 
@@ -46,7 +57,7 @@ gh pr checks <PR_NUMBER> --repo Azure/azure-sdk-for-java
 
 All checks must have a `pass` or `success` conclusion. If any check is still pending, wait and retry. If any check has failed, skip this PR and report the failure — do not merge it.
 
-## Step 2: Confirm only allowed files are modified
+## Step 3: Confirm only allowed files are modified
 
 Retrieve the list of files changed in the PR:
 
@@ -61,7 +72,7 @@ Every file in the diff must match one of these patterns:
 
 If any file outside these patterns is present, skip this PR and report the unexpected file — do not merge it.
 
-## Step 3: Resolve all Copilot review comments
+## Step 4: Resolve all Copilot review comments
 
 List all review threads on the PR. For each unresolved review comment authored by `Copilot` (or `github-actions[bot]` acting as Copilot), resolve the thread using the GitHub GraphQL API:
 
@@ -102,13 +113,13 @@ mutation {
 
 Resolve all unresolved threads where the first comment's author login is `Copilot` or `copilot-pull-request-reviewer[bot]`.
 
-## Step 4: Confirm no unresolved comments from human users
+## Step 5: Confirm no unresolved comments from human users
 
-After resolving Copilot threads, check whether any review threads from human users remain unresolved. Use the same GraphQL query from Step 3 and inspect all threads where `isResolved` is `false` and the author login is **not** `Copilot`, `copilot-pull-request-reviewer`, or any known bot (logins ending in `[bot]`).
+After resolving Copilot threads, check whether any review threads from human users remain unresolved. Use the same GraphQL query from Step 4 and inspect all threads where `isResolved` is `false` and the author login is **not** `Copilot`, `copilot-pull-request-reviewer`, or any known bot (logins ending in `[bot]`).
 
 If any such thread exists, skip this PR and report the unresolved human comment — do not merge it.
 
-## Step 5: Approve and merge the PR
+## Step 6: Approve and merge the PR
 
 Approve the PR:
 
