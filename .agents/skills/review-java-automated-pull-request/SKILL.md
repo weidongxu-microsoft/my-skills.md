@@ -33,7 +33,7 @@ Automated PR review progress
 - [ ] Confirm the PR matches the target pattern and is non-draft
 - [ ] Confirm PR author is `azure-sdk`
 - [ ] Check review progress from memory (if HEAD SHA matches, skip it and move to the next PR)
-- [ ] Check PR description contains `Release Plan: <url>` (warn if missing, continue)
+- [ ] Check PR description contains `Release Plan link: <url>` (warn if missing, continue)
 - [ ] Verify Java package name for new library
 - [ ] Inspect mergeability
 - [ ] Inspect checks (CI results)
@@ -70,13 +70,13 @@ If the author is not `azure-sdk`, skip this PR and report the unexpected author 
 
 ## Check PR description contains a Release Plan link
 
-Retrieve the PR body and check for a line matching `Release Plan: <url>`:
+Retrieve the PR body and check for a line matching `Release Plan link: <url>`:
 
 ```bash
 gh pr view <PR_NUMBER> --json body --repo Azure/azure-sdk-for-java --jq '.body'
 ```
 
-If no `Release Plan:` line is found in the description, log a warning (e.g. "WARNING: No Release Plan link found in PR #<PR_NUMBER> description") and continue the review process.
+If no `Release Plan link:` line is found in the description, log a warning (e.g. "WARNING: No Release Plan link found in PR #<PR_NUMBER> description") and continue the review process.
 
 ## Verify Java package name for new library
 
