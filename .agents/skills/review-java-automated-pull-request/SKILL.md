@@ -37,13 +37,15 @@ Automated PR review progress
 - [ ] Verify Java package name for new library
 - [ ] Inspect mergeability
 - [ ] Inspect checks (CI results)
+- [ ] Review the changes of the PR
+- [ ] Save review progress to memory
 ```
 
 ## Memorize review progress
 
 Recall memory "pr-reviewed" to get the review progress. It should contain a list of PR numbers, the HEAD SHA of the commit reviewed, and the review status.
 
-After reviewing all PRs, save a final summary to memory "pr-reviewed" with the review progress. It should persist
+After reviewing all PRs, save a final summary to memory "pr-reviewed" with the review progress. It should include:
 - PR number
 - HEAD SHA of the PR
 - review status (e.g. "ready for merge", "pending peer review", "has check failures", "has merge conflicts")
@@ -96,4 +98,8 @@ If the PR branch has conflicts with the main branch ("mergeable_state" is "dirty
 
 ## Failed checks
 
-If the branch of PR has failed checks, refer to [Inspect Failed Checks](./inspect-failed-checks.md) to investigate the failure.
+If the PR has failed checks, refer to [Inspect Failed Checks](./inspect-failed-checks.md) to investigate the failure.
+
+## Review the changes of the PR
+
+If checks are good, and the PR is not approved by me (user [`weidongxu-microsoft`](https://github.com/weidongxu-microsoft)), refer to [Review Changes](./review-changes.md) to review the chanages of the PR.
