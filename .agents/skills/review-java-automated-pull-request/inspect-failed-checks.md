@@ -18,7 +18,8 @@ Inspect failed checks progress
 1. Check CI status for the PR.
 2. If the "Analyze" job fails on the "Verify versions in POM file" step, follow [Update versions in POM](#update-versions-in-pom).
 3. If "Analyze" job fails on "Verify Swagger and TypeSpec Code Generation", follow [Investigate code generation](#investigate-code-generation).
-4. Wait for CI to complete (pass or error).
+4. If only 1 or 2 "Build Test" fails, re-run that check, as the failure is likely intermittent.
+5. Wait for CI to complete (pass or error).
 
 ## Default commands
 
@@ -81,7 +82,7 @@ gh pr checks <pr-number> --watch --fail-fast
 5. Diff with main to find the project folder; it should be in the form of `sdk/<service>/<module>/`.
 6. Run `tsp-client update` in the project folder. This should regenerate the Java files.
 7. Search the regenerated code diff. Check whether there is a change in the assignment of `this.apiVersion = <api-version>` (from `<current-api-version>` to `<latest-api-version>`) in a `##ClientImpl.java` file.
-8. If there is such a diff, check the PR to see if there is already a comment like this: "The latest TypeSpec api-version is <latest-api-version>, but the specified api-version in this release request was <current-api-version>. Please pin api-version in TypeSpec tspconfig.yaml to <current-api-version>". If no such comment exists, add one to remind the author.
+8. If there is such a diff, check the PR to see if there is already a comment like this: "The generated api-version is <latest-api-version>, but the specified api-version in this release request was <current-api-version>. Please pin api-version in TypeSpec tspconfig.yaml to <current-api-version>". If no such comment exists, add one to remind the author.
 9. If there is no such diff on the assignment of `api-version`, STOP AND ASK USER TO DECIDE WHAT TO DO.
 
 ## Commands
