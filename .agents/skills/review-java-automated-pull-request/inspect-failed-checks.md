@@ -18,7 +18,7 @@ Inspect failed checks progress
 1. Check CI status for the PR.
 2. If the "Analyze" job fails on the "Verify versions in POM file" step, follow [Update versions in POM](#update-versions-in-pom).
 3. If "Analyze" job fails on "Verify Swagger and TypeSpec Code Generation", follow [Investigate code generation](#investigate-code-generation).
-4. If only 1 or 2 "Build Test" fails, re-run that check, as the failure is likely intermittent.
+4. If only 1 or 2 "Build Test" fails, re-run that check via `az rest --method patch --url ...`, as the failure is likely intermittent.
 5. Wait for CI to complete (pass or error).
 
 ## Default commands
