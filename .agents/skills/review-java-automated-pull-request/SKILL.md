@@ -8,6 +8,7 @@ description: Reviews and updates non-draft automated pull requests for Azure Jav
 Use this skill only when all of the following are true:
 - The repository is Azure/azure-sdk-for-java.
 - The pull request is not a draft.
+- The target is `main` branch on `Azure` organization.
 - The title contains `[AutoPR azure-resourcemanager-`.
 
 Do not use this skill for draft or unrelated pull requests.

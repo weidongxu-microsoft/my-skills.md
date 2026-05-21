@@ -7,10 +7,6 @@
 3. Merge increment versions PR
 4. Review Java automated PR
 
-# Action
-
-When I asks for a specified PR or issue, please open it in browser.
-
 # MCP tools
 
 - `mail` can read and write my emails
