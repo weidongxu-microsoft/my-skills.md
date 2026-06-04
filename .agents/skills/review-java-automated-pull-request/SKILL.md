@@ -13,7 +13,7 @@ Use this skill only when all of the following are true:
 
 Do not use this skill for draft or unrelated pull requests.
 
-Do not process any further if the PR author is not `azure-sdk`.
+Do not process any further if the PR author is not `azure-sdk` or `app/azure-sdk-automation`.
 
 Do not merge the PR.
 
@@ -32,7 +32,7 @@ Copy this checklist and update it as work progresses:
 ```text
 Automated PR review progress
 - [ ] Confirm the PR matches the target pattern and is non-draft
-- [ ] Confirm PR author is `azure-sdk`
+- [ ] Confirm PR author is `azure-sdk` or `app/azure-sdk-automation`
 - [ ] Check review progress from memory (if HEAD SHA matches, skip it and move to the next PR)
 - [ ] Check PR description contains `Release Plan link: <url>` (warn if missing, continue)
 - [ ] Verify Java package name for new library
@@ -61,15 +61,15 @@ gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false" --
 gh pr list --state open --search "[AutoPR azure-resourcemanager- draft:false status:failed" --json number,title  --repo Azure/azure-sdk-for-java
 ```
 
-## Confirm PR author is `azure-sdk`
+## Confirm PR author is `azure-sdk` or `app/azure-sdk-automation`
 
-Retrieve the PR author and verify it is `azure-sdk`:
+Retrieve the PR author and verify it is `azure-sdk` or `app/azure-sdk-automation`:
 
 ```bash
 gh pr view <PR_NUMBER> --json author --repo Azure/azure-sdk-for-java --jq '.author.login'
 ```
 
-If the author is not `azure-sdk`, skip this PR and report the unexpected author — do not process it further.
+If the author is not `azure-sdk` or `app/azure-sdk-automation`, skip this PR and report the unexpected author — do not process it further.
 
 ## Check PR description contains a Release Plan link
 

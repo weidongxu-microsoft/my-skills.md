@@ -27,7 +27,7 @@ Copy this checklist and update it as work progresses:
 ```text
 Increment versions PR merge progress
 - [ ] Find eligible PRs (title contains "Increment versions", non-draft)
-- [ ] Confirm PR author is `azure-sdk`
+- [ ] Confirm PR author is `azure-sdk` or `app/azure-sdk-automation`
 - [ ] Confirm all CI checks pass
 - [ ] Confirm only allowed files are modified
 - [ ] Resolve all Copilot review comments
@@ -37,15 +37,15 @@ Increment versions PR merge progress
 
 Process each eligible PR one at a time following the steps below.
 
-## Step 1: Confirm PR author is `azure-sdk`
+## Step 1: Confirm PR author is `azure-sdk` or `app/azure-sdk-automation`
 
-Retrieve the PR author and verify it is `azure-sdk`:
+Retrieve the PR author and verify it is `azure-sdk` or `app/azure-sdk-automation`:
 
 ```bash
 gh pr view <PR_NUMBER> --json author --repo Azure/azure-sdk-for-java --jq '.author.login'
 ```
 
-If the author is not `azure-sdk`, skip this PR and report the unexpected author — do not merge it.
+If the author is not `azure-sdk` or `app/azure-sdk-automation`, skip this PR and report the unexpected author — do not merge it.
 
 ## Step 2: Confirm all CI checks pass
 

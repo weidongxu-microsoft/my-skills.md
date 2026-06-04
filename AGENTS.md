@@ -11,3 +11,7 @@
 
 - `mail` can read and write my emails
 - `m365-copilot` can read my Teams messages
+
+# PR review
+
+When reviewing PR on https://github.com/Azure/azure-rest-api-specs repo or https://github.com/Azure/azure-rest-api-specs-pr repo, beside the usual review of TypeSpec and API, also apply this guideline https://github.com/microsoft/api-guidelines/blob/vNext/azure/Guidelines.md to OpenAPI.
