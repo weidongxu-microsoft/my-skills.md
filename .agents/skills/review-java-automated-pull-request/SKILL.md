@@ -99,7 +99,7 @@ If the PR branch has conflicts with the main branch ("mergeable_state" is "dirty
 
 ## Failed checks
 
-If the PR has failed checks, refer to [Inspect Failed Checks](./inspect-failed-checks.md) to investigate the failure.
+If the PR has failed checks, refer to [Inspect Failed Checks](./inspect-failed-checks.md) to investigate the failure. If only 1 or 2 `Build Test` checks fail, treat them as likely intermittent first and follow that guide to re-run the failed check before doing deeper investigation.
 
 ## Review the changes of the PR
 

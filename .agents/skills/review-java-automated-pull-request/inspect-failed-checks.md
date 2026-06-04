@@ -9,6 +9,7 @@ Inspect failed checks progress
 - [ ] Check CI status for the PR
 - [ ] If "Analyze" job fails on "Verify versions in POM file", follow [Update versions in POM](#update-versions-in-pom)
 - [ ] If "Analyze" job fails on "Verify Swagger and TypeSpec Code Generation", follow [Investigate code generation](#investigate-code-generation)
+- [ ] If only 1 or 2 "Build Test" checks fail, re-run the failed check
 - [ ] Commit and push the fix
 - [ ] Wait for CI to complete (pass or error)
 ```
@@ -20,6 +21,12 @@ Inspect failed checks progress
 3. If "Analyze" job fails on "Verify Swagger and TypeSpec Code Generation", follow [Investigate code generation](#investigate-code-generation).
 4. If only 1 or 2 "Build Test" fails, re-run that check via `az rest --method patch --url ...`, as the failure is likely intermittent.
 5. Wait for CI to complete (pass or error).
+
+## Re-run intermittent Build Test checks
+
+If exactly 1 or 2 failed checks are named `Build Test ...`, re-run the failed check first before investigating code changes. Treat broader or mixed failures as non-intermittent and continue with normal investigation.
+
+Use `gh pr checks` to identify the failed check URL, then re-run that check via `az rest --method patch --url ...`. After triggering the re-run, wait for CI to complete and only continue investigation if the re-run still fails.
 
 ## Default commands
 
