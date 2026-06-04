@@ -28,7 +28,7 @@ Copy this checklist and update it as work progresses:
 Increment versions PR merge progress
 - [ ] Find eligible PRs (title contains "Increment versions", non-draft)
 - [ ] Confirm PR author is `azure-sdk` or `app/azure-sdk-automation`
-- [ ] Confirm all CI checks pass
+- [ ] Confirm all CI checks pass (retry intermittent Build Test failures first)
 - [ ] Confirm only allowed files are modified
 - [ ] Resolve all Copilot review comments
 - [ ] Confirm no unresolved review comments from human users
@@ -55,7 +55,9 @@ Retrieve the check runs for the PR's head commit:
 gh pr checks <PR_NUMBER> --repo Azure/azure-sdk-for-java
 ```
 
-All checks must have a `pass` or `success` conclusion. If any check is still pending, wait and retry. If any check has failed, skip this PR and report the failure — do not merge it.
+All checks must have a `pass` or `success` conclusion. If any check is still pending, wait and retry.
+
+If exactly 1 or 2 failed checks are named `Build Test ...`, follow [Retry Intermittent Build Test Checks](../shared/retry-azure-sdk-java-build-stage.md). If the retry returns the failed check to `pending`, wait for CI to complete and continue only if all checks pass. If the retry still fails, or if any failed check is not a `Build Test ...` check, skip this PR and report the failure — do not merge it.
 
 ## Step 3: Confirm only allowed files are modified
 

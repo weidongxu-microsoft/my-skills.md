@@ -19,14 +19,12 @@ Inspect failed checks progress
 1. Check CI status for the PR.
 2. If the "Analyze" job fails on the "Verify versions in POM file" step, follow [Update versions in POM](#update-versions-in-pom).
 3. If "Analyze" job fails on "Verify Swagger and TypeSpec Code Generation", follow [Investigate code generation](#investigate-code-generation).
-4. If only 1 or 2 "Build Test" fails, re-run that check via `az rest --method patch --url ...`, as the failure is likely intermittent.
+4. If only 1 or 2 "Build Test" fails, follow [Retry Intermittent Build Test Checks](../shared/retry-azure-sdk-java-build-stage.md).
 5. Wait for CI to complete (pass or error).
 
 ## Re-run intermittent Build Test checks
 
-If exactly 1 or 2 failed checks are named `Build Test ...`, re-run the failed check first before investigating code changes. Treat broader or mixed failures as non-intermittent and continue with normal investigation.
-
-Use `gh pr checks` to identify the failed check URL, then re-run that check via `az rest --method patch --url ...`. After triggering the re-run, wait for CI to complete and only continue investigation if the re-run still fails.
+If exactly 1 or 2 failed checks are named `Build Test ...`, follow [Retry Intermittent Build Test Checks](../shared/retry-azure-sdk-java-build-stage.md) before investigating code changes.
 
 ## Default commands
 
@@ -38,8 +36,6 @@ az rest --method get --url "https://dev.azure.com/azure-sdk/<project-id>/_apis/b
 
 # Get log for a specific failed step
 az rest --method get --url "https://dev.azure.com/azure-sdk/<project-id>/_apis/build/builds/<build-id>/logs/<log-id>"
-
-# Run sub-process
 
 # Wait for CI to complete
 gh pr checks <pr-number> --watch --fail-fast --repo Azure/azure-sdk-for-java
