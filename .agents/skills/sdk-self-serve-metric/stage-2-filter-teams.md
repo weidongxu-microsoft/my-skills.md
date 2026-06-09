@@ -1,0 +1,108 @@
+# Stage 2 - Filter Teams threads
+
+## Goal
+
+Reduce the raw Teams dataset to the subset that is relevant to `azure-resourcemanager-*` AutoPR communication, while preserving traceability back to the raw thread records.
+
+## Inputs
+
+- `details\teams-raw.json`
+- `details\teams-enriched.json` if stage 1 created it
+- stage 1 GitHub PR datasets
+
+## Outputs
+
+- `details\teams-filtered.json`
+- optional `details\teams-filter-audit.json`
+- `progress\stage-2.md`
+
+## Checklist
+
+```text
+Stage 2 progress
+- [ ] Load the raw Teams dataset from stage 1
+- [ ] Load the GitHub PR datasets from stage 1
+- [ ] Filter Teams threads to those related to azure-resourcemanager-*
+- [ ] Mark why each retained thread was kept
+- [ ] Persist the filtered dataset and stage notes
+```
+
+## Filtering rules
+
+Keep a Teams thread if any of the following is true:
+
+1. The top-level post body contains `azure-resourcemanager-`
+2. Any reply body contains `azure-resourcemanager-`
+3. The top-level post or any reply contains a GitHub PR link in `Azure/azure-sdk-for-java`
+4. The linked PR number maps to a PR from stage 1 whose title contains `[AutoPR azure-resourcemanager-`
+5. The thread enrichment data maps the post or replies to an in-scope AutoPR title, `Java-<number>` identifier, or `azure-resourcemanager-*` library
+
+Do not rely on keyword matching alone when a PR link is available. A thread with a PR link to an in-scope AutoPR should be kept even if the library name is not written explicitly in the text.
+
+## Recommended normalized shape
+
+Persist a filtered record like:
+
+```json
+{
+  "threadId": "...",
+  "kept": true,
+  "reasons": [
+    "body contains azure-resourcemanager-foo",
+    "linked PR 49142 is an in-scope AutoPR",
+    "thread text matched Java-6354278 to PR #49274"
+  ],
+  "linkedPrNumbers": [49142],
+  "linkedPrTitles": [],
+  "linkedLibraries": [],
+  "matchEvidence": [],
+  "postAuthor": "...",
+  "postTime": "...",
+  "postBody": "...",
+  "replyCount": 3,
+  "replies": []
+}
+```
+
+If a thread is not kept, it can remain only in the raw dataset. The filtered file should contain retained threads only.
+
+Each retained thread should preserve enough evidence to explain why it was kept without rereading the raw source.
+
+## Workflow
+
+1. Load the raw Teams threads.
+2. Load the stage 1 GitHub PR datasets and build a lookup by PR number, title, `Java-<number>` token, and library name.
+3. Inspect each thread for keyword evidence, PR-link evidence, and stage-1 enrichment evidence.
+4. Keep threads that are clearly related to an in-scope AutoPR even when the original post omitted the explicit URL.
+5. Persist the retained dataset and, if useful, an audit file describing discarded or ambiguous records.
+
+## Output files
+
+Persist the filtered dataset to:
+
+```text
+details\teams-filtered.json
+```
+
+Persist an optional audit file with discarded threads and reasons if it helps:
+
+```text
+details\teams-filter-audit.json
+```
+
+## Error handling
+
+- If a Teams thread references a PR link that cannot be resolved, record the unresolved link in `progress\stage-2.md`.
+- If a thread is ambiguous, prefer retaining the candidate matches in an audit field and document the ambiguity.
+- Do not mutate the raw dataset during filtering.
+
+If a thread appears to describe an in-scope AutoPR review request but lacks the explicit PR link, prefer matching it through stage-1 enrichment instead of dropping it immediately.
+
+## Stage notes
+
+Write `progress\stage-2.md` with:
+- filtering rules applied
+- number of raw threads
+- number of retained threads
+- edge cases
+- threads kept only because of linked PR evidence
