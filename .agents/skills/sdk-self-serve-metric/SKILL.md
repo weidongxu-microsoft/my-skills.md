@@ -18,6 +18,8 @@ This skill is for:
 - PR title pattern: `[AutoPR azure-resourcemanager-`
 - Teams channel: `Language - Java`
 - Reporting period: a closed calendar range such as `2026-05-01` through `2026-05-31`
+- non-draft PRs only
+- PRs that are still open or merged; exclude PRs that were closed without merging
 
 This skill is not for:
 - Non-Java repositories
@@ -41,8 +43,10 @@ If the reporting period is missing or ambiguous, stop and ask the user before cr
 Successful completion produces:
 - a folder `self-serve-metric-<yyyymm>` in the repository root
 - persisted stage artifacts under `details\`, `progress\`, and `result\`
+- a filtered GitHub collection summary that includes the total AutoPR count in scope
 - a machine-readable metrics file
 - a human-readable report
+- a bar graph for AutoPR communication distribution with the filtered total AutoPR count shown on the chart
 
 ## Success criteria
 
@@ -113,11 +117,13 @@ The final report must cover at least these metrics for the requested period:
 
 1. Count of AutoPRs created in the period
 2. Count of AutoPRs merged in the period
-3. PR communication metrics for AutoPRs in scope, excluding bot and Copilot comments:
+3. Total count of filtered AutoPRs in scope for the reporting dataset
+4. PR communication metrics for AutoPRs in scope, excluding bot and Copilot comments:
    - minimum
    - maximum
    - average
-4. Teams metrics for threads related to `azure-resourcemanager-*`:
+   - distribution by comment count, for example `0 -> 10 PRs`, `1 -> 10 PRs`, `2 -> 3 PRs`
+5. Teams metrics for threads related to `azure-resourcemanager-*`:
    - count of related top-level posts
    - average replies per related post
 
@@ -131,9 +137,9 @@ Stage 1 must collect enough raw data to support all later calculations. Do not c
 
 Collect all of the following PR datasets:
 
-1. AutoPRs created within the period
-2. AutoPRs merged within the period
-3. AutoPRs that are open, ready for review, not merged, and created within the period
+1. Non-draft AutoPRs created within the period, excluding PRs that were later closed without merging
+2. Non-draft AutoPRs merged within the period
+3. Non-draft AutoPRs that are open, ready for review, not merged, and created within the period
 
 For each PR collected, persist enough detail to support stage 3:
 - PR number
@@ -226,6 +232,9 @@ progress\stage-1.md
 progress\stage-2.md
 progress\stage-3.md
 result\metrics.json
+details\github-summary.json
+result\pr-communication-distribution.json
+result\pr-communication-bar.png
 result\report.md
 ```
 

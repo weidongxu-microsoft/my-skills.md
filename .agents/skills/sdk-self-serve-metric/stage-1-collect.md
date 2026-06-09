@@ -15,6 +15,7 @@ Collect and persist all GitHub and Teams source data needed by later stages. Thi
 
 - output folders under `self-serve-metric-<yyyymm>\`
 - raw and normalized GitHub datasets
+- a filtered GitHub collection summary with total counts
 - raw and normalized Teams datasets
 - enriched Teams datasets with inferred PR and library references when possible
 - `progress\stage-1.md`
@@ -54,11 +55,13 @@ progress\period.json
 
 1. Normalize the requested reporting period and create the output folders.
 2. Collect the GitHub PR datasets for created, merged, and open ready-for-review AutoPRs.
-3. Build the union of in-scope PR numbers and collect PR bodies plus comment data.
-4. Collect the raw Teams channel threads and replies for the same period.
-5. Enrich Teams threads with explicit or inferred PR references using the GitHub AutoPR dataset.
-6. Persist raw outputs before creating normalized JSON files.
-7. Write stage notes describing data coverage, blockers, and file locations.
+3. Apply the GitHub filters that exclude draft PRs and PRs closed without merging.
+4. Compute and persist a filtered GitHub summary, including the total AutoPR count in scope.
+5. Build the union of in-scope PR numbers and collect PR bodies plus comment data.
+6. Collect the raw Teams channel threads and replies for the same period.
+7. Enrich Teams threads with explicit or inferred PR references using the GitHub AutoPR dataset.
+8. Persist raw outputs before creating normalized JSON files.
+9. Write stage notes describing data coverage, blockers, and file locations.
 
 ## GitHub collection
 
@@ -66,16 +69,22 @@ progress\period.json
 
 Search for PRs where:
 - title contains `[AutoPR azure-resourcemanager-`
+- PR is not draft
 - `createdAt` is within the requested period
+- exclude PRs that are closed without being merged
 
 Example search:
 
 ```bash
 gh pr list --state all \
-  --search "\"[AutoPR azure-resourcemanager-\" created:2026-05-01..2026-05-31" \
+  --search "\"[AutoPR azure-resourcemanager-\" draft:false created:2026-05-01..2026-05-31" \
   --json number,title,url,author,createdAt,mergedAt,closedAt,state,isDraft,headRefOid \
   --repo Azure/azure-sdk-for-java
 ```
+
+Then normalize the result by removing any PR where:
+- `isDraft == true`, or
+- `state == "CLOSED"` and `mergedAt` is empty
 
 Persist to:
 
@@ -88,13 +97,14 @@ details\github-prs-created.json
 Search for PRs where:
 - title contains `[AutoPR azure-resourcemanager-`
 - PR is merged
+- PR is not draft
 - `mergedAt` is within the requested period
 
 Example search:
 
 ```bash
 gh pr list --state merged \
-  --search "\"[AutoPR azure-resourcemanager-\" merged:2026-05-01..2026-05-31" \
+  --search "\"[AutoPR azure-resourcemanager-\" draft:false merged:2026-05-01..2026-05-31" \
   --json number,title,url,author,createdAt,mergedAt,closedAt,state,isDraft,headRefOid \
   --repo Azure/azure-sdk-for-java
 ```
@@ -171,6 +181,30 @@ For reproducibility, also persist the union PR number list to:
 ```text
 details\github-pr-union.json
 ```
+
+Also persist a filtered GitHub summary file that includes the total count label for in-scope AutoPRs:
+
+```text
+details\github-summary.json
+```
+
+Suggested shape:
+
+```json
+{
+  "createdCount": 21,
+  "mergedCount": 20,
+  "openReadyCount": 12,
+  "unionCount": 24,
+  "totalFilteredAutoPrCount": 21,
+  "filters": {
+    "excludeDraft": true,
+    "excludeClosedUnmerged": true
+  }
+}
+```
+
+`totalFilteredAutoPrCount` should be computed after the draft and closed-unmerged filters are applied. Unless the user requests a different denominator, this should align with the filtered set of AutoPRs created in the period.
 
 ## Teams collection
 
@@ -255,5 +289,6 @@ Write `progress\stage-1.md` with:
 - data sources used
 - exact period used
 - file list created
+- filtered GitHub total count and how it was computed
 - missing data or collection gaps
 - any authentication issues or manual follow-up needed
