@@ -117,7 +117,7 @@ The final report must cover at least these metrics for the requested period:
 
 1. Count of AutoPRs created in the period
 2. Count of those AutoPRs that were merged
-3. Total count of filtered AutoPRs in scope for the reporting dataset
+3. Count of those AutoPRs that are currently open
 4. PR communication metrics for AutoPRs in scope, excluding bot and Copilot comments:
    - minimum
    - maximum
@@ -139,7 +139,7 @@ Collect all of the following PR datasets:
 
 1. Non-draft AutoPRs created within the period, excluding PRs that were later closed without merging
 2. The subset of dataset 1 that was merged
-3. The subset of dataset 1 that is open, ready for review, and not merged
+3. The subset of dataset 1 that is currently open and not merged
 
 For each PR collected, persist enough detail to support stage 3:
 - PR number
@@ -223,7 +223,7 @@ By the end of the full workflow, the folder should contain at least:
 ```text
 details\github-prs-created.json
 details\github-prs-merged.json
-details\github-prs-open-ready.json
+details\github-prs-open.json
 details\github-pr-comments.json
 details\teams-raw.json
 details\teams-filtered.json

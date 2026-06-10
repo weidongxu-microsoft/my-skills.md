@@ -27,7 +27,7 @@ Stage 1 progress
 - [ ] Normalize the requested period and create the output folders
 - [ ] Collect AutoPRs created within the period
 - [ ] Collect AutoPRs merged within the period
-- [ ] Collect open ready-for-review AutoPRs created within the period
+- [ ] Collect currently open AutoPRs created within the period
 - [ ] Collect comments for the GitHub PRs in scope
 - [ ] Collect all posts and replies from the Java Teams channel during the period
 - [ ] Persist raw and normalized files in details\
@@ -56,7 +56,7 @@ progress\period.json
 1. Normalize the requested reporting period and create the output folders.
 2. Collect the GitHub created-period AutoPR cohort.
 3. Apply the GitHub filters that exclude draft PRs and PRs closed without merging.
-4. Derive the merged and open ready-for-review subsets from that created-period cohort.
+4. Derive the merged and currently-open subsets from that created-period cohort.
 5. Compute and persist a filtered GitHub summary, including the total AutoPR count in scope.
 6. Build the union of in-scope PR numbers and collect PR bodies plus comment data.
 7. Collect the raw Teams channel threads and replies for the same period.
@@ -106,21 +106,18 @@ Persist to:
 details\github-prs-merged.json
 ```
 
-### Dataset C - Open ready-for-review AutoPRs created within the period
+### Dataset C - Currently open AutoPRs created within the period
 
 Build this dataset from dataset A only.
 
 Keep PRs where:
 - `state == "OPEN"`
 - `mergedAt` is empty
-- review is still required / ready for review
-
-If review-state fields such as `mergeStateStatus` or `reviewDecision` are not already available from dataset A, enrich the created-period cohort before deriving this subset.
 
 Persist to:
 
 ```text
-details\github-prs-open-ready.json
+details\github-prs-open.json
 ```
 
 ### Dataset D - PR body and comments
@@ -178,7 +175,7 @@ Suggested shape:
 {
   "createdCount": 21,
   "mergedCount": 19,
-  "openReadyCount": 1,
+  "openCount": 2,
   "unionCount": 21,
   "totalFilteredAutoPrCount": 21,
   "filters": {
@@ -188,7 +185,7 @@ Suggested shape:
 }
 ```
 
-`totalFilteredAutoPrCount` should be computed after the draft and closed-unmerged filters are applied. Unless the user requests a different denominator, this is the created-period reporting ensemble, and `mergedCount` plus `openReadyCount` must be interpretable as subsets of that same cohort.
+`totalFilteredAutoPrCount` should be computed after the draft and closed-unmerged filters are applied. Unless the user requests a different denominator, this is the created-period reporting ensemble, and `mergedCount` plus `openCount` must be interpretable as subsets of that same cohort.
 
 ## Teams collection
 

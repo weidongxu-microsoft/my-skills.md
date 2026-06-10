@@ -62,7 +62,17 @@ details\github-prs-merged.json
 
 These counts must be a subset of `details\github-prs-created.json`.
 
-### 3. Total filtered AutoPR count
+### 3. Created-period AutoPRs that are currently open
+
+Count the PRs in:
+
+```text
+details\github-prs-open.json
+```
+
+These counts must be a subset of `details\github-prs-created.json`.
+
+### 4. Total filtered AutoPR count
 
 Prefer the filtered count recorded in:
 
@@ -73,7 +83,7 @@ details\github-summary.json
 Use the `totalFilteredAutoPrCount` label from stage 1 so the report denominator is explicit and traceable.
 This should match the filtered created-period cohort.
 
-### 4. PR communication metrics
+### 5. PR communication metrics
 
 Use the non-draft created-period cohort from stage 1, excluding PRs that were closed without merging, unless the user asks for another denominator.
 
@@ -113,7 +123,7 @@ Also compute a distribution of communication counts, for example:
 
 This distribution should drive the bar graph.
 
-### 5. Teams communication metrics
+### 6. Teams communication metrics
 
 From:
 
@@ -135,7 +145,7 @@ Prefer the enriched Teams dataset when it helps map retained threads back to spe
 ## Workflow
 
 1. Load the persisted period metadata and stage datasets.
-2. Compute the created-period cohort count and its merged/open subsets.
+2. Compute the created-period cohort count and its merged/currently-open subsets.
 3. Load or derive the filtered total AutoPR count.
 4. Compute per-PR human communication counts from the persisted comment datasets.
 5. Compute aggregate PR communication statistics.
