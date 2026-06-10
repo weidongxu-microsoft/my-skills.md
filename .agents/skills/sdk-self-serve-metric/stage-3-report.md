@@ -52,7 +52,7 @@ details\github-prs-created.json
 These counts must exclude draft PRs.
 They must also exclude PRs that were closed without merging.
 
-### 2. AutoPRs merged in the period
+### 2. Created-period AutoPRs that were merged
 
 Count the PRs in:
 
@@ -60,7 +60,7 @@ Count the PRs in:
 details\github-prs-merged.json
 ```
 
-These counts must exclude draft PRs.
+These counts must be a subset of `details\github-prs-created.json`.
 
 ### 3. Total filtered AutoPR count
 
@@ -71,10 +71,11 @@ details\github-summary.json
 ```
 
 Use the `totalFilteredAutoPrCount` label from stage 1 so the report denominator is explicit and traceable.
+This should match the filtered created-period cohort.
 
 ### 4. PR communication metrics
 
-Use the non-draft PR union from stage 1, typically anchored on non-draft PRs created in the period and excluding PRs that were closed without merging, unless the user asks for another denominator.
+Use the non-draft created-period cohort from stage 1, excluding PRs that were closed without merging, unless the user asks for another denominator.
 
 For each PR, compute:
 
@@ -134,7 +135,7 @@ Prefer the enriched Teams dataset when it helps map retained threads back to spe
 ## Workflow
 
 1. Load the persisted period metadata and stage datasets.
-2. Compute GitHub created and merged counts.
+2. Compute the created-period cohort count and its merged/open subsets.
 3. Load or derive the filtered total AutoPR count.
 4. Compute per-PR human communication counts from the persisted comment datasets.
 5. Compute aggregate PR communication statistics.
@@ -149,6 +150,7 @@ Generate a bar chart where:
 - x-axis = human communication count per PR
 - y-axis = number of PRs having that count
 - the chart visibly shows the filtered total AutoPR count, preferably in the title or subtitle
+- the chart visibly shows the average human communication count, preferably in the title or subtitle
 
 Preferred implementation:
 1. Use Python.
@@ -158,6 +160,7 @@ Preferred implementation:
 Preferred labeling:
 - title: `AutoPR human communication distribution`
 - subtitle or secondary title line: `Total filtered AutoPRs: <count>`
+- subtitle or secondary title line: `Average human communication count: <avg>`
 
 Persist:
 
@@ -220,6 +223,7 @@ The report should include:
 - reporting period
 - raw dataset counts
 - total filtered AutoPR count
+- a clear statement that the GitHub reporting ensemble is the filtered AutoPRs created in the period
 - final metric values
 - notable outliers for PR communication
 - the PR communication distribution

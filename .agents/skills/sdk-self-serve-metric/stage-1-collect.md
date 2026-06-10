@@ -54,14 +54,15 @@ progress\period.json
 ## Workflow
 
 1. Normalize the requested reporting period and create the output folders.
-2. Collect the GitHub PR datasets for created, merged, and open ready-for-review AutoPRs.
+2. Collect the GitHub created-period AutoPR cohort.
 3. Apply the GitHub filters that exclude draft PRs and PRs closed without merging.
-4. Compute and persist a filtered GitHub summary, including the total AutoPR count in scope.
-5. Build the union of in-scope PR numbers and collect PR bodies plus comment data.
-6. Collect the raw Teams channel threads and replies for the same period.
-7. Enrich Teams threads with explicit or inferred PR references using the GitHub AutoPR dataset.
-8. Persist raw outputs before creating normalized JSON files.
-9. Write stage notes describing data coverage, blockers, and file locations.
+4. Derive the merged and open ready-for-review subsets from that created-period cohort.
+5. Compute and persist a filtered GitHub summary, including the total AutoPR count in scope.
+6. Build the union of in-scope PR numbers and collect PR bodies plus comment data.
+7. Collect the raw Teams channel threads and replies for the same period.
+8. Enrich Teams threads with explicit or inferred PR references using the GitHub AutoPR dataset.
+9. Persist raw outputs before creating normalized JSON files.
+10. Write stage notes describing data coverage, blockers, and file locations.
 
 ## GitHub collection
 
@@ -92,22 +93,12 @@ Persist to:
 details\github-prs-created.json
 ```
 
-### Dataset B - AutoPRs merged within the period
+### Dataset B - Created-period AutoPRs that were merged
 
-Search for PRs where:
-- title contains `[AutoPR azure-resourcemanager-`
-- PR is merged
-- PR is not draft
-- `mergedAt` is within the requested period
+Build this dataset from dataset A only.
 
-Example search:
-
-```bash
-gh pr list --state merged \
-  --search "\"[AutoPR azure-resourcemanager-\" draft:false merged:2026-05-01..2026-05-31" \
-  --json number,title,url,author,createdAt,mergedAt,closedAt,state,isDraft,headRefOid \
-  --repo Azure/azure-sdk-for-java
-```
+Keep PRs where:
+- `mergedAt` is present
 
 Persist to:
 
@@ -117,21 +108,14 @@ details\github-prs-merged.json
 
 ### Dataset C - Open ready-for-review AutoPRs created within the period
 
-Search for PRs where:
-- title contains `[AutoPR azure-resourcemanager-`
-- PR is open
-- PR is not draft
-- review is required / ready for review
-- `createdAt` is within the requested period
+Build this dataset from dataset A only.
 
-Example search:
+Keep PRs where:
+- `state == "OPEN"`
+- `mergedAt` is empty
+- review is still required / ready for review
 
-```bash
-gh pr list --state open \
-  --search "\"[AutoPR azure-resourcemanager-\" review:required draft:false created:2026-05-01..2026-05-31" \
-  --json number,title,url,author,createdAt,mergedAt,closedAt,state,isDraft,headRefOid,mergeable,mergeStateStatus \
-  --repo Azure/azure-sdk-for-java
-```
+If review-state fields such as `mergeStateStatus` or `reviewDecision` are not already available from dataset A, enrich the created-period cohort before deriving this subset.
 
 Persist to:
 
@@ -141,7 +125,7 @@ details\github-prs-open-ready.json
 
 ### Dataset D - PR body and comments
 
-Build the union of PR numbers from datasets A, B, and C. For every PR in that union, collect:
+Because datasets B and C are subsets of dataset A, the union should normally equal dataset A. For every PR in that union, collect:
 - PR body
 - issue comments
 - review comments or review-thread comments
@@ -193,9 +177,9 @@ Suggested shape:
 ```json
 {
   "createdCount": 21,
-  "mergedCount": 20,
-  "openReadyCount": 12,
-  "unionCount": 24,
+  "mergedCount": 19,
+  "openReadyCount": 1,
+  "unionCount": 21,
   "totalFilteredAutoPrCount": 21,
   "filters": {
     "excludeDraft": true,
@@ -204,7 +188,7 @@ Suggested shape:
 }
 ```
 
-`totalFilteredAutoPrCount` should be computed after the draft and closed-unmerged filters are applied. Unless the user requests a different denominator, this should align with the filtered set of AutoPRs created in the period.
+`totalFilteredAutoPrCount` should be computed after the draft and closed-unmerged filters are applied. Unless the user requests a different denominator, this is the created-period reporting ensemble, and `mergedCount` plus `openReadyCount` must be interpretable as subsets of that same cohort.
 
 ## Teams collection
 

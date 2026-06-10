@@ -46,7 +46,7 @@ Successful completion produces:
 - a filtered GitHub collection summary that includes the total AutoPR count in scope
 - a machine-readable metrics file
 - a human-readable report
-- a bar graph for AutoPR communication distribution with the filtered total AutoPR count shown on the chart
+- a bar graph for AutoPR communication distribution with the filtered total AutoPR count and average communication count shown on the chart
 
 ## Success criteria
 
@@ -116,7 +116,7 @@ Also record the original user wording for the period in `progress\stage-1.md` so
 The final report must cover at least these metrics for the requested period:
 
 1. Count of AutoPRs created in the period
-2. Count of AutoPRs merged in the period
+2. Count of those AutoPRs that were merged
 3. Total count of filtered AutoPRs in scope for the reporting dataset
 4. PR communication metrics for AutoPRs in scope, excluding bot and Copilot comments:
    - minimum
@@ -127,7 +127,7 @@ The final report must cover at least these metrics for the requested period:
    - count of related top-level posts
    - average replies per related post
 
-Unless the user asks for different denominators, compute PR communication metrics from the PRs created in the period.
+Unless the user asks for different denominators, the reporting ensemble is the filtered set of AutoPRs created in the period. All other GitHub counts should be subsets of that ensemble.
 
 ## Data to collect
 
@@ -138,8 +138,8 @@ Stage 1 must collect enough raw data to support all later calculations. Do not c
 Collect all of the following PR datasets:
 
 1. Non-draft AutoPRs created within the period, excluding PRs that were later closed without merging
-2. Non-draft AutoPRs merged within the period
-3. Non-draft AutoPRs that are open, ready for review, not merged, and created within the period
+2. The subset of dataset 1 that was merged
+3. The subset of dataset 1 that is open, ready for review, and not merged
 
 For each PR collected, persist enough detail to support stage 3:
 - PR number
