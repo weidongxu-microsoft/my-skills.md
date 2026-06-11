@@ -157,7 +157,7 @@ Each per-language report must cover at least these metrics for the requested per
 1. Count of AutoPRs created in the period
 2. Count of those AutoPRs that were merged
 3. Count of those AutoPRs that are currently open
-4. PR communication metrics for AutoPRs in scope, excluding bot and Copilot comments:
+4. PR human comment metrics for AutoPRs in scope, counting only issue comments and review comments from non-bot authors:
    - minimum
    - maximum
    - average
@@ -194,6 +194,7 @@ For each PR collected, persist enough detail to support stage 3:
 - PR body
 - all issue comments
 - all review comments or review-thread comments
+- optional review submissions if you want audit context, but keep them separate from the comment-count dataset
 
 ### Teams data
 
@@ -221,7 +222,13 @@ If the Teams tool returns shortened or paraphrased text, run a second enrichment
 
 ## Communication rules for PR metrics
 
-For PR communication metrics, exclude comments authored by:
+For PR communication metrics, count only:
+- issue comments
+- review comments or review-thread comments
+
+Do not count review submission events such as `APPROVED`, `CHANGES_REQUESTED`, or review-summary `COMMENTED` entries in the human comment count, even when authored by humans.
+
+Exclude comments authored by:
 - `Copilot`
 - `copilot-pull-request-reviewer`
 - accounts ending in `[bot]`

@@ -132,6 +132,8 @@ Because datasets B and C are subsets of dataset A, the union should normally equ
 - issue comments
 - review comments or review-thread comments
 
+Do not mix review submission events into the comment arrays used for the human comment count. If you collect review submissions for audit context, persist them separately from `issueComments` and `reviewComments`.
+
 Prefer a single normalized file keyed by PR number. The normalized record should include:
 
 ```json

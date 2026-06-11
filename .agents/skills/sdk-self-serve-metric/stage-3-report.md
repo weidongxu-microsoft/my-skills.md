@@ -96,6 +96,8 @@ humanCommunicationCount =
   + review comments
 ```
 
+Do not include review submission events such as `APPROVED`, `CHANGES_REQUESTED`, or review-summary `COMMENTED` entries in `humanCommunicationCount`.
+
 Exclude comments authored by:
 - `Copilot`
 - `copilot-pull-request-reviewer`
