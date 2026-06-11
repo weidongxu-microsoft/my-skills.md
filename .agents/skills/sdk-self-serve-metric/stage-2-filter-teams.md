@@ -2,7 +2,7 @@
 
 ## Goal
 
-Reduce each raw Teams dataset to the subset that is relevant to the current language entry's AutoPR communication, while preserving traceability back to the raw thread records.
+Reduce each raw Teams dataset to the subset that is relevant to the current language entry's support communication, while preserving traceability back to the raw thread records.
 
 ## Inputs
 
@@ -37,8 +37,12 @@ Keep a Teams thread if any of the following is true:
 3. The top-level post or any reply contains a GitHub PR link in the language entry's repository
 4. The linked PR number maps to a PR from stage 1 whose title matches the language entry's PR title pattern
 5. The thread enrichment data maps the post or replies to an in-scope AutoPR title, generation identifier, or library from the language entry
+6. The thread discusses an SDK validation or SDK generation failure for the current language and includes an `Azure/azure-rest-api-specs` PR link
+7. The thread discusses an SDK validation or SDK generation failure for the current language and the text can be linked to a language-entry library even if the referenced PR is in `Azure/azure-rest-api-specs` rather than the SDK repository
 
 Do not rely on keyword matching alone when a PR link is available. A thread with a PR link to an in-scope AutoPR should be kept even if the library name is not written explicitly in the text.
+
+For rules 6 and 7, prefer keeping the thread when the post clearly describes language-channel triage of an SDK validation failure, SDK validation check failure, emitter crash, generator crash, or similar generation error for a spec PR in `Azure/azure-rest-api-specs`.
 
 ## Recommended normalized shape
 
@@ -73,9 +77,10 @@ Each retained thread should preserve enough evidence to explain why it was kept 
 
 1. Load the raw Teams threads.
 2. Load the stage 1 GitHub PR datasets for the same language and build a lookup by PR number, title, generation identifier, and library name.
-3. Inspect each thread for keyword evidence, PR-link evidence, and stage-1 enrichment evidence.
+3. Inspect each thread for keyword evidence, PR-link evidence, `Azure/azure-rest-api-specs` validation-failure evidence, and stage-1 enrichment evidence.
 4. Keep threads that are clearly related to an in-scope AutoPR even when the original post omitted the explicit URL.
-5. Persist the retained dataset and, if useful, an audit file describing discarded or ambiguous records.
+5. Keep threads that are clearly language-relevant SDK validation or generation-failure triage for an `Azure/azure-rest-api-specs` PR even when no SDK-repo PR link is present.
+6. Persist the retained dataset and, if useful, an audit file describing discarded or ambiguous records.
 
 ## Output files
 
@@ -99,6 +104,8 @@ details\<language-key>\teams-filter-audit.json
 
 If a thread appears to describe an in-scope AutoPR review request but lacks the explicit PR link, prefer matching it through stage-1 enrichment instead of dropping it immediately.
 
+If a thread appears to describe an SDK validation failure or generation failure for the current language and includes an `Azure/azure-rest-api-specs` PR link, prefer retaining it with explicit evidence rather than dropping it because the link is not in the SDK repository.
+
 ## Stage notes
 
 Write `progress\stage-2.md` with:
@@ -107,3 +114,4 @@ Write `progress\stage-2.md` with:
 - per-language number of retained threads
 - edge cases
 - threads kept only because of linked PR evidence
+- threads kept because of `Azure/azure-rest-api-specs` validation-failure evidence

@@ -145,6 +145,8 @@ Optionally include:
 
 Prefer the enriched Teams dataset when it helps map retained threads back to specific PRs or libraries. The report should state whether Teams matching used explicit links only or explicit-plus-inferred PR/library matches for that language.
 
+Retained Teams threads may include both SDK-repo AutoPR discussions and language-channel SDK validation or generation-failure triage linked to `Azure/azure-rest-api-specs` PRs. The report should make that scope clear when such threads are present.
+
 ## Workflow
 
 1. Load the persisted period metadata and the language entries from `sdk-source.md`.
@@ -244,6 +246,7 @@ Each per-language report should include:
 - the PR communication distribution
 - the graph file location
 - whether Teams matching used explicit links only or inferred PR/library matches
+- whether retained Teams threads include `Azure/azure-rest-api-specs` validation-failure discussions
 - assumptions and exclusions
 
 Keep the narrative concise and evidence-based. If some source data was incomplete, state that clearly in the report.

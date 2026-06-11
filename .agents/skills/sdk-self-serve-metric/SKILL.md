@@ -162,7 +162,7 @@ Each per-language report must cover at least these metrics for the requested per
    - maximum
    - average
    - distribution by comment count, for example `0 -> 10 PRs`, `1 -> 10 PRs`, `2 -> 3 PRs`
-5. Teams metrics for threads related to the language entry's library pattern and PR pattern:
+5. Teams metrics for retained language-channel threads, including both AutoPR discussions and SDK validation / generation-failure discussions tied to `Azure/azure-rest-api-specs` PRs for that language:
    - count of related top-level posts
    - average replies per related post
 
@@ -216,7 +216,9 @@ For each Teams thread, try to persist:
   - AutoPR title fragments
   - generation identifiers such as `Java-<number>`, `.NET-<number>`, `Python-<number>`, `JS-<number>`, `Go-<number>`
   - language-entry library names from `sdk-source.md`
+  - `Azure/azure-rest-api-specs` PR links tied to SDK validation or generation failures for the language entry
   - phrases like `<language> sdk review for <library or service>`
+  - phrases like `SDK Validation - <language>`, `SDK generation failing`, or similar validation-failure wording
 
 If the Teams tool returns shortened or paraphrased text, run a second enrichment pass to recover the concrete PR reference from the thread text and the GitHub AutoPR dataset collected in stage 1.
 
@@ -243,7 +245,7 @@ When in doubt, keep the raw comment and classify the exclusion in derived output
 
 For Teams, collect all posts and replies first. Do not discard bot-authored content during stage 1.
 
-During stage 2, mark whether each thread is related to the current language entry. Preserve enough metadata so stage 3 can compute either all-reply counts or human-only counts later if needed.
+During stage 2, mark whether each thread is related to the current language entry. This includes both in-scope AutoPR discussion threads and language-channel triage threads about SDK validation or generation failures linked to `Azure/azure-rest-api-specs` PRs. Preserve enough metadata so stage 3 can compute either all-reply counts or human-only counts later if needed.
 
 If a Teams thread cannot be confidently matched, keep it out of the filtered dataset and record the ambiguity in `progress\stage-2.md`.
 

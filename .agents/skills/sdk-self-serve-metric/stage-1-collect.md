@@ -216,6 +216,8 @@ Use Microsoft 365 Copilot / Work IQ to request structured output. Ask for:
 
 Ask the tool to avoid summarizing, shortening, or paraphrasing the post body. The goal is to capture the original wording, because abbreviated text can hide the PR title or library name needed for matching.
 
+Preserve `Azure/azure-rest-api-specs` PR links and validation-failure wording when present. These threads may later be retained even when they are not AutoPR review requests, because they can represent language-channel SDK validation or generation-failure triage for the same reporting period.
+
 Prefer a prompt like:
 
 ```text
