@@ -21,6 +21,9 @@ Compute the requested self-serve metrics from the persisted GitHub and Teams dat
 - `result\<language-key>\pr-communication-distribution.json`
 - `result\<language-key>\pr-communication-bar.png` or a documented fallback such as `result\<language-key>\pr-communication-bar.svg`
 - `result\<language-key>\report.md`
+- `result\language-summary-metrics.json`
+- `result\language-pr-count-and-average-human-communication-bar.png` or a documented fallback such as `result\language-pr-count-and-average-human-communication-bar.svg`
+- `result\language-teams-post-count-bar.png` or a documented fallback such as `result\language-teams-post-count-bar.svg`
 - `progress\stage-3.md`
 
 ## Checklist
@@ -36,6 +39,7 @@ Stage 3 progress
 - [ ] Compute Teams post and reply metrics for each language
 - [ ] Write result files per language
 - [ ] Generate the PR communication bar graph per language
+- [ ] Generate cross-language summary bar graphs
 - [ ] Write report.md per language
 - [ ] Write progress\stage-3.md
 ```
@@ -159,6 +163,8 @@ Retained Teams threads may include both SDK-repo AutoPR discussions and language
 8. Generate a bar graph for the distribution, using Python if possible.
 9. Compute Teams related-post and reply metrics from the filtered dataset, using enrichment metadata when available.
 10. Write `result\<language-key>\metrics.json` first, then generate `result\<language-key>\report.md` from the same numbers.
+11. Build a cross-language summary dataset from the per-language metrics.
+12. Generate a combined cross-language bar chart for AutoPR count and average human communication per PR, plus a separate retained Teams post count chart.
 
 ## PR communication graph
 
@@ -192,6 +198,44 @@ result\<language-key>\pr-communication-bar.svg
 ```
 
 and document the fallback in `progress\stage-3.md`.
+
+## Cross-language summary graphs
+
+After the per-language metrics are computed, generate a summary dataset and three additional bar charts across all languages in `sdk-source.md`.
+
+Persist the summary dataset to:
+
+```text
+result\language-summary-metrics.json
+```
+
+Suggested shape:
+
+```json
+[
+  {
+    "languageKey": "java",
+    "language": "Java",
+    "createdCount": 21,
+    "averageHumanCommunication": 1.71,
+    "teamsRelatedPostCount": 2
+  }
+]
+```
+
+Generate these charts:
+
+1. `result\language-pr-count-and-average-human-communication-bar.png`
+   - x-axis = language
+   - visually combine:
+     - filtered AutoPR count in the created-period cohort
+     - average human communication count per PR
+   - you may use grouped bars, dual axes, or another clear layout that keeps both measures readable in one graph
+2. `result\language-teams-post-count-bar.png`
+   - x-axis = language
+   - y-axis = retained Teams post count
+
+If PNG is not practical, write `.svg` fallbacks with the same file stems and document the fallback in `progress\stage-3.md`.
 
 ## Result files
 
@@ -267,5 +311,6 @@ Write `progress\stage-3.md` with:
 - excluded author rules used
 - denominator used for PR communication per language
 - graph generation method and output file per language
+- cross-language summary graph generation method and output files
 - files read per language
 - any ambiguity or follow-up suggestions

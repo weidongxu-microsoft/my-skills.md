@@ -61,6 +61,9 @@ Successful completion produces:
 - one machine-readable metrics file per language
 - one human-readable report per language
 - one bar graph per language for AutoPR communication distribution with the filtered total AutoPR count and average communication count shown on the chart
+- cross-language summary bar charts for:
+  - AutoPR count and average human communication per PR by language in one combined graph
+  - retained Teams post count by language
 
 ## Success criteria
 
@@ -114,6 +117,9 @@ self-serve-metric-<yyyymm>\
       teams-enriched.json
       teams-filtered.json
   result\
+    language-summary-metrics.json
+    language-pr-count-and-average-human-communication-bar.png
+    language-teams-post-count-bar.png
     <language-key>\
       metrics.json
       pr-communication-distribution.json
@@ -284,6 +290,9 @@ details\<language-key>\github-summary.json
 result\<language-key>\pr-communication-distribution.json
 result\<language-key>\pr-communication-bar.png
 result\<language-key>\report.md
+result\language-summary-metrics.json
+result\language-pr-count-and-average-human-communication-bar.png
+result\language-teams-post-count-bar.png
 ```
 
-Apply this minimum artifact set per language under the per-language folder layout. If you need additional files, add them under the same folder tree and keep the names self-explanatory.
+Apply this minimum artifact set per language under the per-language folder layout, plus the cross-language summary artifacts at the `result\` root. If you need additional files, add them under the same folder tree and keep the names self-explanatory.
