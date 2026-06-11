@@ -11,8 +11,8 @@
 - GitHub repository: `Azure/azure-sdk-for-net`
 - PR title pattern: `[AutoPR Azure.ResourceManager.`
 - Lib name pattern: `Azure.ResourceManager.*`
-- Teams channel: `Language - DotNet`
-- Teams link: `https://teams.microsoft.com/l/channel/19%3A7b87fb348f224b37b6206fa9d89a105b%40thread.skype/Language%20-%20DotNet?groupId=3e17dcb0-4257-4a30-b843-77f47f1d4121&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47`
+- Teams channel: `Code Generation - .NET`
+- Teams link: `https://teams.microsoft.com/l/channel/19%3Aacbd512e57bd475198ea6bf4564599e3%40thread.skype/Code%20Generation%20-%20.NET?groupId=3e17dcb0-4257-4a30-b843-77f47f1d4121&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47`
 
 # Python
 

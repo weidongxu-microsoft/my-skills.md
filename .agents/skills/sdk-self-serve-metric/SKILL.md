@@ -1,36 +1,50 @@
 ---
 name: sdk-self-serve-metric
-description: '**WORKFLOW SKILL** - Collects staged self-serve metrics for Azure Java AutoPRs and related Teams discussions, persisting raw data, filtered thread data, progress notes, and final reports under self-serve-metric-<yyyymm>. USE FOR: "create sdk self serve metric for 202605", "collect Java AutoPR self-serve metrics for May 2026".'
+description: '**WORKFLOW SKILL** - Collects staged self-serve metrics for Azure SDK AutoPRs and related Teams discussions across languages listed in sdk-source.md, persisting raw data, filtered thread data, progress notes, and per-language reports under self-serve-metric-<yyyymm>. USE FOR: "create sdk self serve metric for 202605", "collect SDK self-serve metrics for May 2026".'
 ---
 
 # SDK Self-Serve Metric
 
-Use this skill when the user wants a staged metric/report for Azure Java management-plane AutoPRs and the related Teams discussion in the Java channel.
+Use this skill when the user wants a staged metric/report for Azure SDK AutoPRs and the related Teams discussion, with the language sources driven by `sdk-source.md`.
 
 ## Purpose
 
-Collect, persist, filter, and report self-serve operational metrics for Java management-plane AutoPRs and the related Teams communication for a requested reporting period.
+Collect, persist, filter, and report self-serve operational metrics for SDK AutoPRs and the related Teams communication for a requested reporting period, producing the same outputs per language.
 
 ## Scope
 
 This skill is for:
-- GitHub repository: `Azure/azure-sdk-for-java`
-- PR title pattern: `[AutoPR azure-resourcemanager-`
-- Teams channel: `Language - Java`
-- Reporting period: a closed calendar range such as `2026-05-01` through `2026-05-31`
+- SDK languages listed in `./sdk-source.md`
+- one GitHub repository / AutoPR pattern / library pattern / Teams channel tuple per language source entry
+- reporting periods such as `2026-05-01` through `2026-05-31`
 - non-draft PRs only
 - PRs that are still open or merged; exclude PRs that were closed without merging
 
 This skill is not for:
-- Non-Java repositories
-- Non-management-plane PRs
+- repositories or languages not listed in `sdk-source.md`
 - Ad-hoc PR review or merge workflows
 - One-off Teams lookups without the staged metric/report output
+
+## Language source catalog
+
+Treat `./sdk-source.md` as the source of truth for which languages to process.
+
+Each top-level heading represents one language entry. For each entry, read at least:
+- GitHub repository
+- PR title pattern
+- Lib name pattern
+- Teams channel
+- Teams link
+
+The workflow should iterate the language entries found in `sdk-source.md` rather than hardcoding Java, .NET, Python, TypeScript, Go, or any future language explicitly in the instructions.
+
+When a new language is added to `sdk-source.md` with the same fields, the skill should process it automatically.
 
 ## Inputs
 
 Required inputs:
 - reporting period, preferably as a closed date range such as `2026-05-01` through `2026-05-31`
+- `sdk-source.md`
 
 Optional inputs:
 - explicit output folder key if the user wants something other than the default `yyyymm`
@@ -43,10 +57,10 @@ If the reporting period is missing or ambiguous, stop and ask the user before cr
 Successful completion produces:
 - a folder `self-serve-metric-<yyyymm>` in the repository root
 - persisted stage artifacts under `details\`, `progress\`, and `result\`
-- a filtered GitHub collection summary that includes the total AutoPR count in scope
-- a machine-readable metrics file
-- a human-readable report
-- a bar graph for AutoPR communication distribution with the filtered total AutoPR count and average communication count shown on the chart
+- one per-language filtered GitHub collection summary
+- one machine-readable metrics file per language
+- one human-readable report per language
+- one bar graph per language for AutoPR communication distribution with the filtered total AutoPR count and average communication count shown on the chart
 
 ## Success criteria
 
@@ -54,7 +68,7 @@ The skill is complete only when:
 - all requested stage outputs are written to disk
 - raw source data needed by later stages is preserved
 - filtered Teams threads can be traced back to raw source records
-- the final report includes the requested GitHub and Teams metrics
+- each language listed in `sdk-source.md` has the requested GitHub and Teams metrics, or an explicit documented blocker
 
 ## Output folder
 
@@ -80,9 +94,34 @@ self-serve-metric-<yyyymm>\
 ```
 
 Expected usage of each folder:
-- `details\`: raw and normalized data files used by later stages
+- `details\`: raw and normalized data files used by later stages, typically grouped per language
 - `progress\`: stage notes, checklists, open questions, and assumptions
-- `result\`: final metrics and human-readable report
+- `result\`: final metrics and human-readable reports, typically grouped per language
+
+Recommended per-language layout:
+
+```text
+self-serve-metric-<yyyymm>\
+  details\
+    <language-key>\
+      github-prs-created.json
+      github-prs-merged.json
+      github-prs-open.json
+      github-pr-comments.json
+      github-pr-union.json
+      github-summary.json
+      teams-raw.json
+      teams-enriched.json
+      teams-filtered.json
+  result\
+    <language-key>\
+      metrics.json
+      pr-communication-distribution.json
+      pr-communication-bar.png
+      report.md
+```
+
+Derive `<language-key>` from the language heading in `sdk-source.md`, normalized to a stable lowercase kebab-case form.
 
 ## Staged workflow
 
@@ -113,7 +152,7 @@ Also record the original user wording for the period in `progress\stage-1.md` so
 
 ## Metrics to produce
 
-The final report must cover at least these metrics for the requested period:
+Each per-language report must cover at least these metrics for the requested period:
 
 1. Count of AutoPRs created in the period
 2. Count of those AutoPRs that were merged
@@ -123,11 +162,11 @@ The final report must cover at least these metrics for the requested period:
    - maximum
    - average
    - distribution by comment count, for example `0 -> 10 PRs`, `1 -> 10 PRs`, `2 -> 3 PRs`
-5. Teams metrics for threads related to `azure-resourcemanager-*`:
+5. Teams metrics for threads related to the language entry's library pattern and PR pattern:
    - count of related top-level posts
    - average replies per related post
 
-Unless the user asks for different denominators, the reporting ensemble is the filtered set of AutoPRs created in the period. All other GitHub counts should be subsets of that ensemble.
+Unless the user asks for different denominators, the reporting ensemble for each language is the filtered set of AutoPRs created in the period for that language entry. All other GitHub counts should be subsets of that ensemble.
 
 ## Data to collect
 
@@ -135,7 +174,7 @@ Stage 1 must collect enough raw data to support all later calculations. Do not c
 
 ### GitHub data
 
-Collect all of the following PR datasets:
+For each language entry from `sdk-source.md`, collect all of the following PR datasets:
 
 1. Non-draft AutoPRs created within the period, excluding PRs that were later closed without merging
 2. The subset of dataset 1 that was merged
@@ -158,7 +197,7 @@ For each PR collected, persist enough detail to support stage 3:
 
 ### Teams data
 
-Collect all top-level posts and replies from the Java Teams channel during the period, before any filtering.
+Collect all top-level posts and replies from the language entry's Teams channel during the period, before any filtering.
 
 If the Microsoft 365 / Work IQ tool requires EULA acceptance or additional sign-in, stop and ask the user instead of fabricating data.
 
@@ -174,9 +213,9 @@ For each Teams thread, try to persist:
 - any explicit PR links
 - any inferred PR references such as:
   - AutoPR title fragments
-  - `Java-<number>` generation identifiers
-  - `azure-resourcemanager-*` library names
-  - phrases like `Java sdk review for <library or service>`
+  - generation identifiers such as `Java-<number>`, `.NET-<number>`, `Python-<number>`, `JS-<number>`, `Go-<number>`
+  - language-entry library names from `sdk-source.md`
+  - phrases like `<language> sdk review for <library or service>`
 
 If the Teams tool returns shortened or paraphrased text, run a second enrichment pass to recover the concrete PR reference from the thread text and the GitHub AutoPR dataset collected in stage 1.
 
@@ -197,11 +236,11 @@ When in doubt, keep the raw comment and classify the exclusion in derived output
 
 For Teams, collect all posts and replies first. Do not discard bot-authored content during stage 1.
 
-During stage 2, mark whether each thread is related to `azure-resourcemanager-*`. Preserve enough metadata so stage 3 can compute either all-reply counts or human-only counts later if needed.
+During stage 2, mark whether each thread is related to the current language entry. Preserve enough metadata so stage 3 can compute either all-reply counts or human-only counts later if needed.
 
 If a Teams thread cannot be confidently matched, keep it out of the filtered dataset and record the ambiguity in `progress\stage-2.md`.
 
-When a thread does not contain an explicit PR URL, it can still be in scope if the post text or reply text can be matched to an AutoPR title, `Java-<number>` release identifier, or inferred `azure-resourcemanager-*` library.
+When a thread does not contain an explicit PR URL, it can still be in scope if the post text or reply text can be matched to an AutoPR title, a generation identifier, or an inferred library from the current language entry.
 
 ## Preferred tools
 
@@ -221,21 +260,21 @@ When a thread does not contain an explicit PR URL, it can still be in scope if t
 By the end of the full workflow, the folder should contain at least:
 
 ```text
-details\github-prs-created.json
-details\github-prs-merged.json
-details\github-prs-open.json
-details\github-pr-comments.json
-details\teams-raw.json
-details\teams-filtered.json
+details\<language-key>\github-prs-created.json
+details\<language-key>\github-prs-merged.json
+details\<language-key>\github-prs-open.json
+details\<language-key>\github-pr-comments.json
+details\<language-key>\teams-raw.json
+details\<language-key>\teams-filtered.json
 progress\period.json
 progress\stage-1.md
 progress\stage-2.md
 progress\stage-3.md
-result\metrics.json
-details\github-summary.json
-result\pr-communication-distribution.json
-result\pr-communication-bar.png
-result\report.md
+result\<language-key>\metrics.json
+details\<language-key>\github-summary.json
+result\<language-key>\pr-communication-distribution.json
+result\<language-key>\pr-communication-bar.png
+result\<language-key>\report.md
 ```
 
-If you need additional files, add them under the same folder tree and keep the names self-explanatory.
+Apply this minimum artifact set per language under the per-language folder layout. If you need additional files, add them under the same folder tree and keep the names self-explanatory.

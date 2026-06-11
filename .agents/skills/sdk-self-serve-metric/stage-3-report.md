@@ -2,40 +2,41 @@
 
 ## Goal
 
-Compute the requested self-serve metrics from the persisted GitHub and Teams datasets, then write a durable machine-readable result file and a human-readable report.
+Compute the requested self-serve metrics from the persisted GitHub and Teams datasets for each language entry, then write durable per-language result files and reports.
 
 ## Inputs
 
-- `details\github-prs-created.json`
-- `details\github-prs-merged.json`
-- `details\github-pr-comments.json`
-- `details\github-summary.json` when available
-- `details\teams-filtered.json`
-- `details\teams-enriched.json` when available
+- `sdk-source.md`
+- `details\<language-key>\github-prs-created.json`
+- `details\<language-key>\github-prs-merged.json`
+- `details\<language-key>\github-pr-comments.json`
+- `details\<language-key>\github-summary.json` when available
+- `details\<language-key>\teams-filtered.json`
+- `details\<language-key>\teams-enriched.json` when available
 - `progress\period.json`
 
 ## Outputs
 
-- `result\metrics.json`
-- `result\pr-communication-distribution.json`
-- `result\pr-communication-bar.png` or a documented fallback such as `result\pr-communication-bar.svg`
-- `result\report.md`
+- `result\<language-key>\metrics.json`
+- `result\<language-key>\pr-communication-distribution.json`
+- `result\<language-key>\pr-communication-bar.png` or a documented fallback such as `result\<language-key>\pr-communication-bar.svg`
+- `result\<language-key>\report.md`
 - `progress\stage-3.md`
 
 ## Checklist
 
 ```text
 Stage 3 progress
-- [ ] Load the persisted GitHub datasets
-- [ ] Load the filtered Teams dataset
-- [ ] Compute GitHub AutoPR creation and merge counts
-- [ ] Compute PR human-communication metrics
-- [ ] Compute PR human-communication distribution
-- [ ] Compute Teams post and reply metrics
-- [ ] Write result\metrics.json
-- [ ] Write the PR communication distribution file
-- [ ] Generate the PR communication bar graph
-- [ ] Write result\report.md
+- [ ] Load language entries from sdk-source.md
+- [ ] Load the persisted GitHub datasets for each language
+- [ ] Load the filtered Teams dataset for each language
+- [ ] Compute GitHub AutoPR creation and merge counts for each language
+- [ ] Compute PR human-communication metrics for each language
+- [ ] Compute PR human-communication distribution for each language
+- [ ] Compute Teams post and reply metrics for each language
+- [ ] Write result files per language
+- [ ] Generate the PR communication bar graph per language
+- [ ] Write report.md per language
 - [ ] Write progress\stage-3.md
 ```
 
@@ -43,10 +44,10 @@ Stage 3 progress
 
 ### 1. AutoPRs created in the period
 
-Count the PRs in:
+For the current language entry, count the PRs in:
 
 ```text
-details\github-prs-created.json
+details\<language-key>\github-prs-created.json
 ```
 
 These counts must exclude draft PRs.
@@ -57,27 +58,27 @@ They must also exclude PRs that were closed without merging.
 Count the PRs in:
 
 ```text
-details\github-prs-merged.json
+details\<language-key>\github-prs-merged.json
 ```
 
-These counts must be a subset of `details\github-prs-created.json`.
+These counts must be a subset of `details\<language-key>\github-prs-created.json`.
 
 ### 3. Created-period AutoPRs that are currently open
 
 Count the PRs in:
 
 ```text
-details\github-prs-open.json
+details\<language-key>\github-prs-open.json
 ```
 
-These counts must be a subset of `details\github-prs-created.json`.
+These counts must be a subset of `details\<language-key>\github-prs-created.json`.
 
 ### 4. Total filtered AutoPR count
 
 Prefer the filtered count recorded in:
 
 ```text
-details\github-summary.json
+details\<language-key>\github-summary.json
 ```
 
 Use the `totalFilteredAutoPrCount` label from stage 1 so the report denominator is explicit and traceable.
@@ -85,7 +86,7 @@ This should match the filtered created-period cohort.
 
 ### 5. PR communication metrics
 
-Use the non-draft created-period cohort from stage 1, excluding PRs that were closed without merging, unless the user asks for another denominator.
+Use the non-draft created-period cohort from stage 1 for the current language, excluding PRs that were closed without merging, unless the user asks for another denominator.
 
 For each PR, compute:
 
@@ -128,7 +129,7 @@ This distribution should drive the bar graph.
 From:
 
 ```text
-details\teams-filtered.json
+details\<language-key>\teams-filtered.json
 ```
 
 Compute:
@@ -140,19 +141,20 @@ Optionally include:
 - maximum replies
 - median replies
 
-Prefer the enriched Teams dataset when it helps map retained threads back to specific PRs or libraries. The report should state whether Teams matching used explicit links only or explicit-plus-inferred PR/library matches.
+Prefer the enriched Teams dataset when it helps map retained threads back to specific PRs or libraries. The report should state whether Teams matching used explicit links only or explicit-plus-inferred PR/library matches for that language.
 
 ## Workflow
 
-1. Load the persisted period metadata and stage datasets.
-2. Compute the created-period cohort count and its merged/currently-open subsets.
-3. Load or derive the filtered total AutoPR count.
-4. Compute per-PR human communication counts from the persisted comment datasets.
-5. Compute aggregate PR communication statistics.
-6. Compute the PR communication distribution by `humanCommunicationCount`.
-7. Generate a bar graph for the distribution, using Python if possible.
-8. Compute Teams related-post and reply metrics from the filtered dataset, using enrichment metadata when available.
-9. Write `result\metrics.json` first, then generate `result\report.md` from the same numbers.
+1. Load the persisted period metadata and the language entries from `sdk-source.md`.
+2. For each language, load the stage datasets.
+3. Compute the created-period cohort count and its merged/currently-open subsets.
+4. Load or derive the filtered total AutoPR count.
+5. Compute per-PR human communication counts from the persisted comment datasets.
+6. Compute aggregate PR communication statistics.
+7. Compute the PR communication distribution by `humanCommunicationCount`.
+8. Generate a bar graph for the distribution, using Python if possible.
+9. Compute Teams related-post and reply metrics from the filtered dataset, using enrichment metadata when available.
+10. Write `result\<language-key>\metrics.json` first, then generate `result\<language-key>\report.md` from the same numbers.
 
 ## PR communication graph
 
@@ -175,14 +177,14 @@ Preferred labeling:
 Persist:
 
 ```text
-result\pr-communication-distribution.json
-result\pr-communication-bar.png
+result\<language-key>\pr-communication-distribution.json
+result\<language-key>\pr-communication-bar.png
 ```
 
 If PNG is not practical in the environment, write:
 
 ```text
-result\pr-communication-bar.svg
+result\<language-key>\pr-communication-bar.svg
 ```
 
 and document the fallback in `progress\stage-3.md`.
@@ -192,7 +194,7 @@ and document the fallback in `progress\stage-3.md`.
 Write a machine-readable result file:
 
 ```text
-result\metrics.json
+result\<language-key>\metrics.json
 ```
 
 Suggested shape:
@@ -226,11 +228,12 @@ Suggested shape:
 Write a human-readable summary to:
 
 ```text
-result\report.md
+result\<language-key>\report.md
 ```
 
-The report should include:
+Each per-language report should include:
 - reporting period
+- language name and source entry used
 - raw dataset counts
 - total filtered AutoPR count
 - a clear statement that the GitHub reporting ensemble is the filtered AutoPRs created in the period
@@ -249,13 +252,15 @@ Keep the narrative concise and evidence-based. If some source data was incomplet
 - If counts cannot be reconciled, preserve the partial metrics and describe the inconsistency in `progress\stage-3.md`.
 - Do not invent missing PR or Teams data to complete the report.
 - If graph generation fails, still persist the distribution JSON and document the failure or fallback in `progress\stage-3.md`.
+- If one language fails while others succeed, preserve the successful per-language outputs and document the blocked language separately.
 
 ## Stage notes
 
 Write `progress\stage-3.md` with:
+- language entries processed
 - formulas used
 - excluded author rules used
-- denominator used for PR communication
-- graph generation method and output file
-- files read
+- denominator used for PR communication per language
+- graph generation method and output file per language
+- files read per language
 - any ambiguity or follow-up suggestions

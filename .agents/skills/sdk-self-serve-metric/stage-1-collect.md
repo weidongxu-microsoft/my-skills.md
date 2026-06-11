@@ -10,14 +10,15 @@ Collect and persist all GitHub and Teams source data needed by later stages. Thi
 - `periodEnd`
 - `periodKey`
 - repository root path
+- `sdk-source.md`
 
 ## Outputs
 
 - output folders under `self-serve-metric-<yyyymm>\`
-- raw and normalized GitHub datasets
-- a filtered GitHub collection summary with total counts
-- raw and normalized Teams datasets
-- enriched Teams datasets with inferred PR and library references when possible
+- raw and normalized GitHub datasets per language
+- a filtered GitHub collection summary with total counts per language
+- raw and normalized Teams datasets per language
+- enriched Teams datasets with inferred PR and library references when possible, per language
 - `progress\stage-1.md`
 
 ## Checklist
@@ -25,11 +26,12 @@ Collect and persist all GitHub and Teams source data needed by later stages. Thi
 ```text
 Stage 1 progress
 - [ ] Normalize the requested period and create the output folders
-- [ ] Collect AutoPRs created within the period
-- [ ] Collect AutoPRs merged within the period
-- [ ] Collect currently open AutoPRs created within the period
-- [ ] Collect comments for the GitHub PRs in scope
-- [ ] Collect all posts and replies from the Java Teams channel during the period
+- [ ] Load language entries from sdk-source.md
+- [ ] Collect AutoPRs created within the period for each language
+- [ ] Collect AutoPRs merged within the period for each language
+- [ ] Collect currently open AutoPRs created within the period for each language
+- [ ] Collect comments for the GitHub PRs in scope for each language
+- [ ] Collect all posts and replies from each language Teams channel during the period
 - [ ] Persist raw and normalized files in details\
 - [ ] Write stage notes to progress\stage-1.md
 ```
@@ -54,22 +56,25 @@ progress\period.json
 ## Workflow
 
 1. Normalize the requested reporting period and create the output folders.
-2. Collect the GitHub created-period AutoPR cohort.
-3. Apply the GitHub filters that exclude draft PRs and PRs closed without merging.
-4. Derive the merged and currently-open subsets from that created-period cohort.
-5. Compute and persist a filtered GitHub summary, including the total AutoPR count in scope.
-6. Build the union of in-scope PR numbers and collect PR bodies plus comment data.
-7. Collect the raw Teams channel threads and replies for the same period.
-8. Enrich Teams threads with explicit or inferred PR references using the GitHub AutoPR dataset.
-9. Persist raw outputs before creating normalized JSON files.
-10. Write stage notes describing data coverage, blockers, and file locations.
+2. Load the language entries from `sdk-source.md`.
+3. For each language entry, collect the GitHub created-period AutoPR cohort.
+4. Apply the GitHub filters that exclude draft PRs and PRs closed without merging.
+5. Derive the merged and currently-open subsets from that created-period cohort.
+6. Compute and persist a filtered GitHub summary, including the total AutoPR count in scope.
+7. Build the union of in-scope PR numbers and collect PR bodies plus comment data.
+8. Collect the raw Teams channel threads and replies for the same period.
+9. Enrich Teams threads with explicit or inferred PR references using the language-specific GitHub AutoPR dataset.
+10. Persist raw outputs before creating normalized JSON files.
+11. Write stage notes describing data coverage, blockers, and file locations.
 
 ## GitHub collection
+
+For each language entry in `sdk-source.md`, use its GitHub repository, PR title pattern, and library pattern.
 
 ### Dataset A - AutoPRs created within the period
 
 Search for PRs where:
-- title contains `[AutoPR azure-resourcemanager-`
+- title contains the language entry's PR title pattern
 - PR is not draft
 - `createdAt` is within the requested period
 - exclude PRs that are closed without being merged
@@ -78,9 +83,9 @@ Example search:
 
 ```bash
 gh pr list --state all \
-  --search "\"[AutoPR azure-resourcemanager-\" draft:false created:2026-05-01..2026-05-31" \
+  --search "\"<pr-title-pattern>\" draft:false created:2026-05-01..2026-05-31" \
   --json number,title,url,author,createdAt,mergedAt,closedAt,state,isDraft,headRefOid \
-  --repo Azure/azure-sdk-for-java
+  --repo <github-repository>
 ```
 
 Then normalize the result by removing any PR where:
@@ -90,7 +95,7 @@ Then normalize the result by removing any PR where:
 Persist to:
 
 ```text
-details\github-prs-created.json
+details\<language-key>\github-prs-created.json
 ```
 
 ### Dataset B - Created-period AutoPRs that were merged
@@ -103,7 +108,7 @@ Keep PRs where:
 Persist to:
 
 ```text
-details\github-prs-merged.json
+details\<language-key>\github-prs-merged.json
 ```
 
 ### Dataset C - Currently open AutoPRs created within the period
@@ -117,7 +122,7 @@ Keep PRs where:
 Persist to:
 
 ```text
-details\github-prs-open.json
+details\<language-key>\github-prs-open.json
 ```
 
 ### Dataset D - PR body and comments
@@ -132,7 +137,7 @@ Prefer a single normalized file keyed by PR number. The normalized record should
 ```json
 {
   "number": 12345,
-  "url": "https://github.com/Azure/azure-sdk-for-java/pull/12345",
+  "url": "https://github.com/<org>/<repo>/pull/12345",
   "body": "...",
   "issueComments": [],
   "reviewComments": []
@@ -142,11 +147,11 @@ Prefer a single normalized file keyed by PR number. The normalized record should
 Useful commands:
 
 ```bash
-gh pr view <PR_NUMBER> --json body,author,createdAt,mergedAt,closedAt,state,isDraft,title,url --repo Azure/azure-sdk-for-java
+gh pr view <PR_NUMBER> --json body,author,createdAt,mergedAt,closedAt,state,isDraft,title,url --repo <github-repository>
 
-gh api repos/Azure/azure-sdk-for-java/issues/<PR_NUMBER>/comments
+gh api repos/<org>/<repo>/issues/<PR_NUMBER>/comments
 
-gh api repos/Azure/azure-sdk-for-java/pulls/<PR_NUMBER>/comments
+gh api repos/<org>/<repo>/pulls/<PR_NUMBER>/comments
 ```
 
 If you need author metadata or threaded review context, use `gh api graphql`.
@@ -154,19 +159,19 @@ If you need author metadata or threaded review context, use `gh api graphql`.
 Persist to:
 
 ```text
-details\github-pr-comments.json
+details\<language-key>\github-pr-comments.json
 ```
 
 For reproducibility, also persist the union PR number list to:
 
 ```text
-details\github-pr-union.json
+details\<language-key>\github-pr-union.json
 ```
 
 Also persist a filtered GitHub summary file that includes the total count label for in-scope AutoPRs:
 
 ```text
-details\github-summary.json
+details\<language-key>\github-summary.json
 ```
 
 Suggested shape:
@@ -189,12 +194,12 @@ Suggested shape:
 
 ## Teams collection
 
-Collect all top-level posts and replies from the Java Teams channel during the requested period before any filtering.
+For each language entry, collect all top-level posts and replies from that language's Teams channel during the requested period before any filtering.
 
 Channel URL:
 
 ```text
-https://teams.microsoft.com/l/channel/19%3A5e673e41085f4a7eaaf20823b85b2b53%40thread.skype/Language%20-%20Java?groupId=3e17dcb0-4257-4a30-b843-77f47f1d4121&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47
+<teams-link>
 ```
 
 Use Microsoft 365 Copilot / Work IQ to request structured output. Ask for:
@@ -216,20 +221,20 @@ From the Teams channel at <channel-url>, list all top-level posts and all replie
 ```
 
 Persist:
-- the raw tool response to `details\teams-raw-response.txt`
-- the normalized thread list to `details\teams-raw.json`
+- the raw tool response to `details\<language-key>\teams-raw-response.txt`
+- the normalized thread list to `details\<language-key>\teams-raw.json`
 
 If the tool cannot return strict JSON, save the raw response first and then create a normalized JSON file beside it.
 
 If the channel data is too large for one request:
 1. split the period into smaller windows
 2. collect each window separately
-3. persist the per-window raw files in `details\teams-raw-parts\`
-4. merge them into `details\teams-raw.json`
+3. persist the per-window raw files in `details\<language-key>\teams-raw-parts\`
+4. merge them into `details\<language-key>\teams-raw.json`
 
 ## Teams enrichment
 
-After collecting the raw Teams threads, enrich them before stage 2 filtering.
+After collecting the raw Teams threads, enrich them before stage 2 filtering for each language.
 
 For each thread, try to derive:
 - `explicitPrLinks`
@@ -243,16 +248,16 @@ Use these strategies in order:
 1. Extract explicit GitHub PR links from the post body and replies.
 2. Match exact AutoPR title fragments such as:
    - `[AutoPR azure-resourcemanager-foo]-generated-from-SDK Generation - Java-1234567`
-3. Match `Java-<number>` identifiers against the stage 1 GitHub PR titles.
-4. Match explicit `azure-resourcemanager-*` library names.
-5. Match service-oriented phrases like `Java sdk review for compute limit api version 2026-06-01` back to the most plausible `azure-resourcemanager-*` PR title from the stage 1 dataset.
+3. Match language-appropriate generation identifiers such as `Java-<number>`, `.NET-<number>`, `Python-<number>`, `JS-<number>`, or `Go-<number>` against the stage 1 GitHub PR titles.
+4. Match explicit library names using the language entry's lib name pattern.
+5. Match service-oriented phrases like `<language> sdk review for <service>` back to the most plausible PR title from the stage 1 dataset.
 
 Preserve both the original thread text and the enrichment evidence. Do not replace the original body with the inferred PR title.
 
 Persist the enriched dataset to:
 
 ```text
-details\teams-enriched.json
+details\<language-key>\teams-enriched.json
 ```
 
 If a thread has multiple plausible PR matches, keep all candidates in the enrichment file and note the ambiguity in `progress\stage-1.md`.
@@ -263,13 +268,15 @@ If a thread has multiple plausible PR matches, keep all candidates in the enrich
 - If Teams collection is blocked by EULA or authentication, stop and ask the user before continuing.
 - If only part of the data is collected, keep the partial files and record exactly what is missing.
 - If the Teams tool returns abbreviated text that drops the PR title or URL, record that as a collection limitation and run an enrichment pass using GitHub PR metadata before deciding the thread is out of scope.
+- If a language entry in `sdk-source.md` is missing required fields, skip it and document the blocker instead of guessing.
 
 ## Stage notes
 
 Write `progress\stage-1.md` with:
+- language entries loaded from `sdk-source.md`
 - data sources used
 - exact period used
-- file list created
-- filtered GitHub total count and how it was computed
+- per-language file list created
+- per-language filtered GitHub total count and how it was computed
 - missing data or collection gaps
 - any authentication issues or manual follow-up needed
