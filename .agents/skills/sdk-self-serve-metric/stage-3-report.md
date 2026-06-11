@@ -139,7 +139,7 @@ details\<language-key>\teams-filtered.json
 ```
 
 Compute:
-- `relatedPostCount`: number of retained top-level threads
+- `relatedPostCount`: number of SDK generation related top-level Teams posts retained after filtering
 - `averageRepliesPerPost`: arithmetic mean of `replyCount`
 
 Optionally include:
@@ -164,7 +164,7 @@ Retained Teams threads may include both SDK-repo AutoPR discussions and language
 9. Compute Teams related-post and reply metrics from the filtered dataset, using enrichment metadata when available.
 10. Write `result\<language-key>\metrics.json` first, then generate `result\<language-key>\report.md` from the same numbers.
 11. Build a cross-language summary dataset from the per-language metrics.
-12. Generate a combined cross-language bar chart for AutoPR count and average human communication per PR, plus a separate retained Teams post count chart.
+12. Generate a combined cross-language bar chart for AutoPR count and average human communication per PR, plus a separate SDK generation related Teams post count chart.
 
 ## PR communication graph
 
@@ -233,7 +233,7 @@ Generate these charts:
    - you may use grouped bars, dual axes, or another clear layout that keeps both measures readable in one graph
 2. `result\language-teams-post-count-bar.png`
    - x-axis = language
-   - y-axis = retained Teams post count
+   - y-axis = SDK generation related Teams post count
 
 If PNG is not practical, write `.svg` fallbacks with the same file stems and document the fallback in `progress\stage-3.md`.
 

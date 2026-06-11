@@ -63,7 +63,8 @@ Successful completion produces:
 - one bar graph per language for AutoPR communication distribution with the filtered total AutoPR count and average communication count shown on the chart
 - cross-language summary bar charts for:
   - AutoPR count and average human communication per PR by language in one combined graph
-  - retained Teams post count by language
+  - SDK generation related Teams post count by language
+- an optional PowerPoint deck when the user explicitly asks for one
 
 ## Success criteria
 
@@ -120,6 +121,7 @@ self-serve-metric-<yyyymm>\
     language-summary-metrics.json
     language-pr-count-and-average-human-communication-bar.png
     language-teams-post-count-bar.png
+    self-serve-sdk-generation-review-metrics-<yyyymm>.pptx
     <language-key>\
       metrics.json
       pr-communication-distribution.json
@@ -136,10 +138,15 @@ Run the work in these stages and persist outputs after each one:
 1. [Stage 1 - Collect all source data](./stage-1-collect.md)
 2. [Stage 2 - Filter Teams threads to the relevant management-plane discussions](./stage-2-filter-teams.md)
 3. [Stage 3 - Compute metrics and produce the report](./stage-3-report.md)
+5. [Stage 5 - Create presentation deck](./stage-5-create-ppt.md) — only when the user explicitly asks for a PPT or PowerPoint
 
-Do not skip persistence between stages. The goal is that stage 2 and stage 3 can be rerun without recollecting everything.
+Do not skip persistence between stages. The goal is that stage 2 and stage 3 can be rerun without recollecting everything, and stage 5 can be rerun without recomputing the metrics.
 
 If the user asks to stop after a stage, still persist that stage's outputs and clearly record what remains for the next stage.
+
+Stage 4 is intentionally reserved for future required analysis work and is not part of the current skill behavior.
+
+Stage 5 is optional. Do not create a PowerPoint deck unless the user explicitly asks for it.
 
 ## Period handling
 
@@ -293,6 +300,12 @@ result\<language-key>\report.md
 result\language-summary-metrics.json
 result\language-pr-count-and-average-human-communication-bar.png
 result\language-teams-post-count-bar.png
+```
+
+If the user explicitly asks for a presentation deck, also produce:
+
+```text
+result\self-serve-sdk-generation-review-metrics-<yyyymm>.pptx
 ```
 
 Apply this minimum artifact set per language under the per-language folder layout, plus the cross-language summary artifacts at the `result\` root. If you need additional files, add them under the same folder tree and keep the names self-explanatory.
