@@ -103,4 +103,4 @@ If the PR has failed checks, refer to [Inspect Failed Checks](./inspect-failed-c
 
 ## Review the changes of the PR
 
-If checks are good, and the PR is not approved by me (user [`weidongxu-microsoft`](https://github.com/weidongxu-microsoft)), refer to [Review Changes](./review-changes.md) to review the chanages of the PR.
+If checks are good, and the PR is not approved by me (result of `gh api user --jq .login`), refer to [Review Changes](./review-changes.md) to review the chanages of the PR.
