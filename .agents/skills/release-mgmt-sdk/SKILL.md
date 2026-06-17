@@ -70,9 +70,6 @@ Release management SDK progress
 - [ ] Create a scheduled watcher for the `Releasing: 1 libraries` release stage
 - [ ] Wait until `Releasing: 1 libraries` succeeds or fails
 - [ ] Review / approve / merge the Increment versions PR
-- [ ] Refresh changelog status from local sdk repo
-- [ ] Update java-sdk-release-status.csv
-- [ ] Update java-sdk-release-status.md
 ```
 
 ## Step 1: Identify the target row
@@ -132,16 +129,80 @@ in Azure DevOps internal builds, where `{service}` is derived from the Java modu
 sdk/<service>/<sdk-package>
 ```
 
+### Determine release parameters
+
+Do not rely on the pipeline preview API alone to discover `release_*` parameters.
+
+First query the pipeline definition and note its `yamlFilename`:
+
+```powershell
+$token = az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv
+$definition = Invoke-RestMethod -Method Get -Uri "https://dev.azure.com/azure-sdk/internal/_apis/build/definitions/{pipelineId}?api-version=7.1" -Headers @{ Authorization = "Bearer $token" }
+$definition.process.yamlFilename
+```
+
+Then use the Azure DevOps Contribution `HierarchyQuery` API with `onlyFetchTemplateParameters = true` to retrieve the resolved template parameters before queueing any build:
+
+```powershell
+$token = az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv
+$body = @{
+  contributionIds = @("ms.vss-build-web.pipeline-run-parameters-data-provider")
+  dataProviderContext = @{
+    properties = @{
+      pipelineId = {pipelineId}
+      sourceBranch = "refs/heads/main"
+      sourceVersion = ""
+      onlyFetchTemplateParameters = $true
+      retrieveOptions = 1
+      templateParameters = @{}
+      sourcePage = @{
+        url = "https://dev.azure.com/azure-sdk/internal/_build?definitionId={pipelineId}&_a=summary"
+        routeId = "ms.vss-build-web.pipeline-details-route"
+        routeValues = @{
+          project = "internal"
+          viewname = "details"
+          controller = "ContributedPage"
+          action = "Execute"
+          serviceHost = "0fb41ef4-5012-48a9-bf39-4ee3de03ee35 (azure-sdk)"
+        }
+      }
+    }
+  }
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-RestMethod -Method Post -Uri "https://dev.azure.com/azure-sdk/_apis/Contribution/HierarchyQuery/project/590cfd2a-581c-4dcb-a12e-6568ce786175?api-version=7.1-preview.1" -Headers @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" } -Body $body
+$templateParameters = $response.dataProviders."ms.vss-build-web.pipeline-run-parameters-data-provider".templateParameters
+$templateParameters | ConvertTo-Json -Depth 10
+```
+
+Look for a `release_{safeName}` parameter in `templateParameters`. The `safeName` is typically the artifact name with hyphens removed and lowercased (e.g., `azure-resourcemanager-standbypool` → `release_azureresourcemanagerstandbypool`).
+
+If the Contribution API returns no `release_*` parameter, optionally cross-check the `ci.yml` referenced by `yamlFilename`, but prefer the Contribution API result for queue-time parameter discovery.
+
 ### Run the release pipeline
 
-1. queue the pipeline
-2. if it uses `templateParameters`, set only:
-   - `release_{sdk-package}` = `true`
-   - all others = `false`
-3. if it has no template parameters, run it directly
-4. verify the queued parameters are correct
-5. open the pipeline run in the browser
-6. wait for completion
+1. If the `ci.yml` has a `release_{safeName}` parameter:
+   - Queue with `templateParameters`:
+     ```powershell
+     $body = @{ templateParameters = @{ release_{safeName} = "true" } } | ConvertTo-Json -Depth 5
+     $run = Invoke-RestMethod -Method Post -Uri 'https://dev.azure.com/azure-sdk/internal/_apis/pipelines/{id}/runs?api-version=7.1' -Headers @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" } -Body $body
+     ```
+2. If the `ci.yml` has **no** `release_` parameters:
+   - Queue with empty body:
+     ```powershell
+     $body = @{} | ConvertTo-Json
+     $run = Invoke-RestMethod -Method Post -Uri 'https://dev.azure.com/azure-sdk/internal/_apis/pipelines/{id}/runs?api-version=7.1' -Headers @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" } -Body $body
+     ```
+3. **Verify the queued parameters** by retrieving the run and checking `templateParameters`:
+   ```powershell
+   $buildUri = "https://dev.azure.com/azure-sdk/internal/_apis/build/builds/$($run.id)?api-version=7.1"
+   $build = Invoke-RestMethod -Uri $buildUri -Headers @{ Authorization = "Bearer $token" } -Method Get
+   $build.templateParameters | ConvertTo-Json
+   ```
+   - If a `release_{safeName}` parameter exists in `ci.yml` but is NOT set to `"true"` in the retrieved build, the run was queued incorrectly
+   - Cancel the incorrect run and re-queue with correct parameters
+4. Open the pipeline run in the browser
+5. Wait for completion
 
 ### After queueing the run
 
@@ -159,32 +220,37 @@ If `Signing` succeeds and the approval step is complete, stop this first schedul
 
 ### After `Signing` succeeds
 
-Check whether the release stage is blocked on a pending approval.
+Find and approve the pending release gate.
 
-1. Query pending approvals:
-
-```bash
-GET https://dev.azure.com/{organization}/{project}/_apis/pipelines/approvals?api-version=7.1-preview.1
-```
-
-2. Find the approval whose pipeline owner matches the current build/run.
-3. Approve it using the same payload shape as the existing Java automation utility.
-
-Use `curl.exe` with a raw JSON body:
+1. Get the build timeline and find the in-progress Checkpoint:
 
 ```powershell
 $token = az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv
-$approvalId = '<approval-id>'
-$body = '[{\"approvalId\":\"' + $approvalId + '\",\"status\":4,\"comment\":\"\"}]'
-$uri = 'https://dev.azure.com/azure-sdk/internal/_apis/pipelines/approvals/' + $approvalId + '?api-version=7.2-preview'
+$timeline = Invoke-RestMethod -Method Get -Uri "https://dev.azure.com/azure-sdk/internal/_apis/build/builds/{buildId}/timeline?api-version=7.1" -Headers @{ Authorization = "Bearer $token" }
+$checkpoint = $timeline.records | Where-Object { $_.type -eq 'Checkpoint' -and $_.state -eq 'inProgress' }
+```
 
-curl.exe -sS -X PATCH $uri `
-  -H \"Authorization: Bearer $token\" `
-  -H \"Content-Type: application/json\" `
-  --data-binary $body
+2. Find the Checkpoint.Approval record (child of the checkpoint):
+
+```powershell
+$approval = $timeline.records | Where-Object { $_.parentId -eq $checkpoint.id -and $_.type -eq 'Checkpoint.Approval' -and $_.state -eq 'inProgress' }
+$approvalId = $approval.id
+```
+
+3. Approve it using a temp file to avoid escaping issues:
+
+```powershell
+$body = '[{"approvalId":"' + $approvalId + '","status":4,"comment":""}]'
+$bodyFile = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($bodyFile, $body, [System.Text.Encoding]::UTF8)
+$uri = "https://dev.azure.com/azure-sdk/internal/_apis/pipelines/approvals/$approvalId?api-version=7.2-preview"
+curl.exe -sS -X PATCH $uri -H "Authorization: Bearer $token" -H "Content-Type: application/json" --data-binary "@$bodyFile"
+Remove-Item $bodyFile
 ```
 
 The response should show the approval status as `approved`.
+
+**Important:** The approval ID is NOT found via the `/pipelines/approvals` API list. It must be extracted from the build timeline as a `Checkpoint.Approval` record.
 
 ### After the approval is sent
 
@@ -209,44 +275,6 @@ After a successful release pipeline:
 5. approve the PR
 6. merge it
 The existing `merge-increment-versions-pr` skill is the reference workflow for this step.
-
-## Step 6: Refresh changelog state
-
-After release actions, read the `CHANGELOG.md` for the Java module from **`Azure/azure-sdk-for-java` on `main`** and determine:
-- latest entry
-- whether it is dated or `Unreleased`
-
-Update the snapshot table in `java-sdk-release-status.md` when it materially changes.
-
-## Step 7: Update local tracker files
-
-Update both:
-
-- `java-sdk-release-status.csv`
-- `java-sdk-release-status.md`
-
-Keep them aligned.
-
-### CSV conventions
-
-- `java_pr_created`: `yes/no`
-- `java_pr_merged`: `yes/no`
-- `java_sdk_released`: `yes/no`
-- `state`: use values like `not created`, `draft`, `merged`, `completed`
-
-### Markdown conventions
-
-Keep:
-
-1. the major actions section near the top
-2. the changelog snapshot table
-3. the detailed row table with module path and notes
-
-Log notable actions such as:
-
-- merged PRs
-- release runs
-- no-op generated PRs that were intentionally closed
 
 ## Useful commands
 
