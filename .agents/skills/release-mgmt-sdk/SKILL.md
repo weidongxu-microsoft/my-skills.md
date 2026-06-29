@@ -1,21 +1,18 @@
 ---
 name: release-mgmt-sdk
-description: '**WORKFLOW SKILL** - Release Azure Java management SDKs using Azure DevOps pipelines, then track status in the root java-sdk-release-status files. Use for requests like "release mgmt sdk for <service>", "release Java mgmt sdk", or "check release status for <service>".'
+description: '**WORKFLOW SKILL** - Release Azure Java management SDKs using Azure DevOps pipelines. Use for requests like "release mgmt sdk for <service>" or "release mgmt sdk for <module>" where <service> is a service folder name and <module> is a Java module name like azure-resourcemanager-*.'
 ---
 
 # Release Management SDK
 
-Use this skill to release Azure Java management SDKs, based on the workflow in `weidongxu-microsoft/typespec-sdk-releases` and the local tracker files in this repository.
+Use this skill to release Azure Java management SDKs.
 
 ## Request patterns
 
-Typical requests include:
+Typical requests:
 
-- `release mgmt sdk for <service>`
-- `release Java mgmt sdk for <service>`
-- `check release status for <service>`
-
-`<service>` may be a service name, release-plan row, spec project path, or Java module path.
+- `release mgmt sdk for <service>` — where `<service>` is a service folder name (e.g. `cognitiveservices`)
+- `release mgmt sdk for <module>` — where `<module>` is a Java module name (e.g. `azure-resourcemanager-cognitiveservices`)
 
 ## Scope
 
@@ -27,7 +24,6 @@ It covers:
 2. releasing the SDK through the service pipeline
 3. merging the follow-up `Increment versions` PR
 4. checking the latest `CHANGELOG.md` release date
-5. updating the local tracker files in this repo
 
 It does **not** cover:
 
@@ -46,7 +42,6 @@ When doing local work in sdk repo, refresh local `main` first.
 
 ## Working rules
 
-- Do not create PRs locally unless the workflow explicitly requires it.
 - Prefer `gh` CLI for GitHub operations.
 - Prefer `az rest` or authenticated REST for Azure DevOps operations.
 - Work one service at a time when local repositories or the same PR/pipeline are involved.
@@ -57,7 +52,6 @@ Copy this checklist and update it during execution:
 
 ```text
 Release management SDK progress
-- [ ] Identify the target service row in the local tracker
 - [ ] Confirm the Java module path
 - [ ] Refresh local sdk repo main if local inspection is needed
 - [ ] Check the latest changelog entry
@@ -72,39 +66,22 @@ Release management SDK progress
 - [ ] Review / approve / merge the Increment versions PR
 ```
 
-## Step 1: Identify the target row
+## Step 1: Infer or verify the Java module path
 
-Find the service in:
+The request is typically `release mgmt sdk for <service>` or `release mgmt sdk for <module>`.
 
-- `java-sdk-release-status.csv`
-- `java-sdk-release-status.md`
+- If the argument looks like a Java module name (e.g. starts with `azure-resourcemanager-`), use it directly as the module.
+- If the argument looks like a service folder name, look in `sdk/<service>/` in the SDK repo for directories matching `azure-resourcemanager-*`. Each such directory is a candidate module.
+  - If exactly one candidate is found, use it.
+  - If multiple candidates are found, ask the user to clarify which module to release.
 
-Use the row to determine:
-
-- release plan
-- spec project path
-- Java module path
-- current Java PR / release state
-
-If the row has no Java module path yet, infer it from `tspconfig.yaml` as described below, then add it to the markdown tracker.
-
-## Step 2: Infer or verify the Java module path
-
-Read `tspconfig.yaml` and inspect:
-
-- `parameters.service-dir`
-- `options."@azure-tools/typespec-java".service-dir` if present
-- `options."@azure-tools/typespec-java".emitter-output-dir`
-
-From these, determine the Java module path in sdk repo, typically:
+The resolved Java module path in the SDK repo is:
 
 ```text
 sdk/<service>/<azure-resourcemanager-package>
 ```
 
-If the path is non-obvious, verify using `tsp-location.yaml` or the package contents in sdk repo, then record it in `java-sdk-release-status.md`.
-
-## Step 3: Check the latest changelog entry
+## Step 2: Check the latest changelog entry
 
 Read the `CHANGELOG.md` for the Java module from **`Azure/azure-sdk-for-java` on `main`** and determine the latest entry.
 
@@ -113,7 +90,7 @@ For this skill:
 - if the latest entry is `Unreleased`, **abort**
 - if the latest entry has a date, continue with release workflow
 
-## Step 4: Release the SDK
+## Step 3: Release the SDK
 
 Use this when the user asks to release an SDK.
 
@@ -264,7 +241,7 @@ The second scheduled task should:
 4. if the stage succeeds, continue directly to the Increment versions PR workflow
 5. stop itself after either success-with-handoff or failure
 
-## Step 5: Process the Increment versions PR
+## Step 4: Process the Increment versions PR
 
 After a successful release pipeline:
 
