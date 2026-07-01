@@ -24,6 +24,7 @@ It covers:
 2. releasing the SDK through the service pipeline
 3. merging the follow-up `Increment versions` PR
 4. checking the latest `CHANGELOG.md` release date
+5. opening the Sonatype Central artifact link for the released module
 
 It does **not** cover:
 
@@ -64,6 +65,7 @@ Release management SDK progress
 - [ ] Create a scheduled watcher for the `Releasing: 1 libraries` release stage
 - [ ] Wait until `Releasing: 1 libraries` succeeds or fails
 - [ ] Review / approve / merge the Increment versions PR
+- [ ] Open the Sonatype Central artifact link for the released module
 ```
 
 ## Step 1: Infer or verify the Java module path
@@ -252,6 +254,25 @@ After a successful release pipeline:
 5. approve the PR
 6. merge it
 The existing `merge-increment-versions-pr` skill is the reference workflow for this step.
+
+## Step 5: Open the Sonatype Central artifact link
+
+After the release stage succeeds and the Increment versions PR is handled, provide the
+Sonatype Central (Maven Central) link for the released module so the user can verify
+publication:
+
+```text
+https://central.sonatype.com/artifact/com.azure.resourcemanager/<module-name>
+```
+
+For example, `azure-resourcemanager-cognitiveservices`:
+
+```text
+https://central.sonatype.com/artifact/com.azure.resourcemanager/azure-resourcemanager-cognitiveservices
+```
+
+Note: it can take some time after the release stage completes for the package to appear
+on Sonatype Central.
 
 ## Useful commands
 
