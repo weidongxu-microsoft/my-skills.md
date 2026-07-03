@@ -10,8 +10,9 @@ Writes result/<key>/{metrics.json, pr-communication-distribution.json,
   pr-communication-bar.png, report.md} plus cross-language summary +
   two cross-language charts under result/.
 
-Language list is loaded from sdk-source.md headings if a language_keys.json is
-present; otherwise falls back to the standard five keys. Adjust LANGS as needed.
+Language list is auto-discovered from the details/ subfolders present, so it
+adapts to the languages in sdk-source.md and to the per-run .NET folder name
+("net" or "dotnet") without editing this file.
 """
 import json, os, sys
 import matplotlib
@@ -23,14 +24,28 @@ det = os.path.join(root, "details")
 res = os.path.join(root, "result")
 periodKey = os.path.basename(root.rstrip("/\\")).replace("self-serve-metric-", "")
 
-# (languageKey, displayName). Keep aligned with sdk-source.md.
-LANGS = [
-    ("java", "Java"),
-    ("dotnet", ".NET"),
-    ("python", "Python"),
-    ("typescript-javascript", "TypeScript/JavaScript"),
-    ("go", "Go"),
-]
+# (languageKey, displayName). Auto-detected from the details/ subfolders that
+# are actually present, so the script does not depend on a fixed key set or on
+# whether the .NET folder is named "net" or "dotnet" in a given run.
+DISPLAY_NAMES = {
+    "java": "Java",
+    "dotnet": ".NET",
+    "net": ".NET",
+    "python": "Python",
+    "typescript-javascript": "TypeScript/JavaScript",
+    "go": "Go",
+}
+# Preferred display order; any unknown keys are appended alphabetically.
+ORDER = ["java", "dotnet", "net", "python", "typescript-javascript", "go"]
+
+def discover_langs(details_dir):
+    present = [d for d in os.listdir(details_dir)
+               if os.path.isdir(os.path.join(details_dir, d))]
+    ordered = [k for k in ORDER if k in present]
+    ordered += sorted(k for k in present if k not in ORDER)
+    return [(k, DISPLAY_NAMES.get(k, k)) for k in ordered]
+
+LANGS = discover_langs(det)
 
 EXCLUDE_EXACT = {"Copilot", "copilot-pull-request-reviewer", "azure-sdk", "app/azure-sdk-automation"}
 
