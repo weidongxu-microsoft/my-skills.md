@@ -211,9 +211,11 @@ For each PR collected, persist enough detail to support stage 3:
 
 ### Teams data
 
-Collect all top-level posts and replies from the language entry's Teams channel during the period, before any filtering.
+Collect all top-level posts and replies from the language entry's Teams channel during the period, before any filtering. Prefer the `workiq` MCP server (Microsoft Graph) with the two-phase enumerate-then-fetch pattern in [stage 1](./stage-1-collect.md); use Microsoft 365 Copilot / Work IQ grounding only as a fallback.
 
 If the Microsoft 365 / Work IQ tool requires EULA acceptance or additional sign-in, stop and ask the user instead of fabricating data.
+
+`workiq`/Graph caps each collection (and each reply page) at 10 items and rejects pagination, so coverage is the top-10 most-recently-active threads per channel. Run the metric soon after the period ends, and flag any thread or reply page that hits the 10-item cap as a lower bound.
 
 If the raw Teams output is too large for a single collection request, collect it in smaller time windows and merge the normalized results into a single persisted dataset.
 
@@ -267,7 +269,11 @@ When a thread does not contain an explicit PR URL, it can still be in scope if t
 ## Preferred tools
 
 - Use `gh` CLI for GitHub collection.
-- Use Microsoft 365 Copilot / Work IQ tooling for the Teams channel collection.
+- For the Teams channel collection, prefer the `workiq` MCP server (a direct Microsoft Graph gateway)
+  using the two-phase enumerate-then-fetch pattern described in stage 1. Fall back to Microsoft 365
+  Copilot / Work IQ grounding only when `workiq` Graph access is unavailable; that grounding search
+  is unreliable (empty results, "expired records", or timeouts) and its timeout is not
+  CLI-configurable because the server is host-injected.
 - Persist raw responses to files before deriving filtered or summarized datasets.
 
 ## Error handling

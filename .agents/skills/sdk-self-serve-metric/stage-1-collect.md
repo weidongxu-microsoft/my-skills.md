@@ -198,13 +198,58 @@ Suggested shape:
 
 For each language entry, collect all top-level posts and replies from that language's Teams channel during the requested period before any filtering.
 
-Channel URL:
+### Preferred method: two-phase Microsoft Graph via the `workiq` MCP server
+
+The `m365-copilot` grounding search is unreliable for this task: in practice it returns empty
+results, "expired records" errors, or repeatedly times out (`-32001 Request timed out`) for busier
+channels. Its per-call timeout also cannot be raised from the CLI config, because `m365-copilot`,
+`mail`, and `workiq` are host-injected MCP servers (not listed in `~/.copilot/mcp-config.json`).
+
+Prefer the `workiq` MCP server instead. It is a direct Microsoft Graph gateway (`workiq-fetch`
+takes Graph entity paths), which is authoritative and returns real message ids, timestamps, bodies,
+and permalinks. Use a two-phase enumerate-then-fetch pattern:
+
+Phase 1 — enumerate recent threads per channel:
 
 ```text
-<teams-link>
+/teams/{team-id}/channels/{channel-id}/messages?$select=id,createdDateTime,from,body,webUrl&$top=10
 ```
 
-Use Microsoft 365 Copilot / Work IQ to request structured output. Ask for:
+Phase 2 — fetch replies for each in-period thread (batch many message ids in one `workiq-fetch`
+call by passing multiple `entityUrls`):
+
+```text
+/teams/{team-id}/channels/{channel-id}/messages/{message-id}/replies?$select=id,createdDateTime,from&$top=10
+```
+
+Derive the ids directly from the language entry's `Teams link` in `sdk-source.md`:
+- `{team-id}` = the `groupId` query parameter (e.g. `3e17dcb0-4257-4a30-b843-77f47f1d4121`).
+- `{channel-id}` = the URL-decoded channel segment, i.e. `19%3A...%40thread.skype` becomes
+  `19:...@thread.skype` (e.g. Java `19:5e673e41085f4a7eaaf20823b85b2b53@thread.skype`).
+- `{tenantId}` (for permalinks) = the `tenantId` query parameter.
+
+Classify each reply's `from` as bot vs human: `from.application.applicationIdentityType == "bot"`
+(for example the `Azure SDK Q&A Bot`) is a bot; `from.user` is a human. Record both total and
+human reply counts so stage 3 can average either.
+
+#### `workiq` constraints to plan around (important)
+- Each collection is hard-capped at 10 items. Pagination is rejected (`$skiptoken` / `$skip not
+  permitted`), and `$filter` on `createdDateTime`, `$orderby`, and `$expand=replies` are not
+  usable (replies are stripped from message output). So you get the 10 most-recently-active threads
+  per channel, and at most 10 replies per thread.
+- Because of the 10-item cap, run the metric soon after the period ends; for these low-traffic
+  channels the top-10 recent threads capture most of the period, but coverage is a floor, not an
+  exhaustive census. Any thread or reply page that hits 10 (look for `@odata.nextLink`) is a lower
+  bound — flag it (e.g. `replyCountCapped: true`) and document it in `progress\stage-1.md`.
+- `workiq-fetch` output larger than 20 KB is saved to a temp file rather than returned inline; parse
+  it with `json.JSONDecoder().raw_decode(...)` because trailing `CorrelationId:` text prevents a
+  plain `json.load`. Batching two or more channels in one call reliably forces the temp-file path.
+- Set `$env:PYTHONIOENCODING="utf-8"` before any Python that touches the bodies; some channel names
+  and posts contain emoji (e.g. the JS/TS channel) and will otherwise fail with a gbk codec error.
+
+### Fallback method: Microsoft 365 Copilot / Work IQ grounding
+
+Only if `workiq` Graph access is unavailable, fall back to `m365-copilot`. Ask for structured output:
 - thread identifier
 - top-level post author
 - top-level post timestamp
@@ -216,19 +261,22 @@ Use Microsoft 365 Copilot / Work IQ to request structured output. Ask for:
 
 Ask the tool to avoid summarizing, shortening, or paraphrasing the post body. The goal is to capture the original wording, because abbreviated text can hide the PR title or library name needed for matching.
 
-Preserve `Azure/azure-rest-api-specs` PR links and validation-failure wording when present. These threads may later be retained even when they are not AutoPR review requests, because they can represent language-channel SDK validation or generation-failure triage for the same reporting period.
-
 Prefer a prompt like:
 
 ```text
 From the Teams channel at <channel-url>, list all top-level posts and all replies created between <periodStart> and <periodEnd>. Return structured JSON only. Preserve the full original text of each post and reply; do not summarize or paraphrase. For each thread include threadId, postAuthor, postTime, originalPostBody, normalizedPostBody if available, replyCount, replies[{author,time,originalBody,normalizedBody}], and any explicit links found in the post or replies.
 ```
 
-Persist:
-- the raw tool response to `details\<language-key>\teams-raw-response.txt`
-- the normalized thread list to `details\<language-key>\teams-raw.json`
+### Persistence (either method)
 
-If the tool cannot return strict JSON, save the raw response first and then create a normalized JSON file beside it.
+Regardless of method, preserve `Azure/azure-rest-api-specs` PR links and validation-failure wording when present. These threads may later be retained even when they are not AutoPR review requests, because they can represent language-channel SDK validation or generation-failure triage for the same reporting period.
+
+Persist:
+- the raw tool response to `details\<language-key>\teams-graph-raw.json` (workiq) or
+  `details\<language-key>\teams-raw-response.txt` (m365-copilot fallback)
+- the normalized in-period thread list to `details\<language-key>\teams-raw.json`
+
+If a response cannot be returned as strict JSON, save the raw response first and then create a normalized JSON file beside it.
 
 If the channel data is too large for one request:
 1. split the period into smaller windows
@@ -270,6 +318,9 @@ If a thread has multiple plausible PR matches, keep all candidates in the enrich
 
 - If GitHub CLI returns no results unexpectedly, persist the exact query used in `progress\stage-1.md`.
 - If Teams collection is blocked by EULA or authentication, stop and ask the user before continuing.
+- If `workiq` Graph access is unavailable and you fall back to `m365-copilot`, expect empty results,
+  "expired records", or timeouts on busier channels; retry with smaller windows and record the
+  limitation rather than fabricating data.
 - If only part of the data is collected, keep the partial files and record exactly what is missing.
 - If the Teams tool returns abbreviated text that drops the PR title or URL, record that as a collection limitation and run an enrichment pass using GitHub PR metadata before deciding the thread is out of scope.
 - If a language entry in `sdk-source.md` is missing required fields, skip it and document the blocker instead of guessing.
