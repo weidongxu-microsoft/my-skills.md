@@ -69,9 +69,16 @@ Persist a filtered record like:
 }
 ```
 
-If a thread is not kept, it can remain only in the raw dataset. The filtered file should contain retained threads only.
+Each retained thread should preserve enough evidence to explain why it was kept without rereading the raw source. Every retained thread must carry `replyCount` (total replies incl. bot) and `humanReplyCount` (non-bot replies) so stage 3 can compute both average-reply denominators; set `replyCountCapped: true` when total replies reach the reply-page cap of 50.
 
-Each retained thread should preserve enough evidence to explain why it was kept without rereading the raw source.
+## Reusable builder
+
+Rather than hand-writing the filtered file, record only the Stage 2 decisions and let the shared script assemble the output:
+
+1. For each language, write `details\<language-key>\teams-decisions.json`, a JSON object mapping the retained `threadId` to `{"reason", "replyCount", "humanReplyCount"}` (total/human reply counts from the `/messages/{id}/replies` fetch).
+2. Run `scripts/build_teams_filtered.py <metric-root>` (optionally pass specific language keys). It reads `teams-raw.json` + `teams-decisions.json`, keeps only threads with `createdInPeriod == true`, and writes `teams-filtered.json` with every in-period thread flagged `kept` (retained ones also carry `reason`, `replyCount`, `humanReplyCount`, `replyCountCapped`, `postAuthor`, `postTime`). This is the exact shape `scripts/compute_metrics.py` (and `stage3.py`) consume.
+
+The resulting `teams-filtered.json` retains all in-period threads with a `kept` boolean (not just retained ones), keeping the discard decisions auditable in one file.
 
 ## Workflow
 
@@ -80,7 +87,7 @@ Each retained thread should preserve enough evidence to explain why it was kept 
 3. Inspect each thread for keyword evidence, PR-link evidence, `Azure/azure-rest-api-specs` validation-failure evidence, and stage-1 enrichment evidence.
 4. Keep threads that are clearly related to an in-scope AutoPR even when the original post omitted the explicit URL.
 5. Keep threads that are clearly language-relevant SDK validation or generation-failure triage for an `Azure/azure-rest-api-specs` PR even when no SDK-repo PR link is present.
-6. Persist the retained dataset and, if useful, an audit file describing discarded or ambiguous records.
+6. Record the decisions in `teams-decisions.json` and run `scripts/build_teams_filtered.py` to persist `teams-filtered.json`.
 
 ## Output files
 

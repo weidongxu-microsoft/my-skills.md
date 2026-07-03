@@ -211,13 +211,13 @@ For each PR collected, persist enough detail to support stage 3:
 
 ### Teams data
 
-Collect all top-level posts and replies from the language entry's Teams channel during the period, before any filtering. Prefer the `workiq` MCP server (Microsoft Graph) with the two-phase enumerate-then-fetch pattern in [stage 1](./stage-1-collect.md); use Microsoft 365 Copilot / Work IQ grounding only as a fallback.
+Collect all top-level posts and replies from the language entry's Teams channel during the period, before any filtering. Enumerate threads with the Microsoft Graph channel-message **`delta`** endpoint via `workiq-fetch`, filtered by `lastModifiedDateTime gt {periodStart}` (complete, deterministic, real message ids), then fetch bodies and reply counts by message id — see [stage 1](./stage-1-collect.md). Do **not** enumerate via Graph `/messages` (it returns only the 10 most-recently-active threads channel-wide). bizchat (`workiq-ask`) is a last-resort fallback only.
 
 If the Microsoft 365 / Work IQ tool requires EULA acceptance or additional sign-in, stop and ask the user instead of fabricating data.
 
-`workiq`/Graph caps each collection (and each reply page) at 10 items and rejects pagination, so coverage is the top-10 most-recently-active threads per channel. Run the metric soon after the period ends, and flag any thread or reply page that hits the 10-item cap as a lower bound.
+For full-month completeness prefer weekly Graph snapshots unioned into `teams-graph-raw.json` plus weekly bizchat enumeration; flag any thread or reply page that hits the 10-item cap as a lower bound, and document residual gaps.
 
-If the raw Teams output is too large for a single collection request, collect it in smaller time windows and merge the normalized results into a single persisted dataset.
+If the raw Teams output is too large for one request, collect it in smaller time windows and merge the normalized results into a single persisted dataset.
 
 Teams collection must preserve the original post content as faithfully as possible. Do not rely on summaries or shortened paraphrases when the purpose is matching a thread to a specific SDK PR or library.
 
@@ -269,11 +269,15 @@ When a thread does not contain an explicit PR URL, it can still be in scope if t
 ## Preferred tools
 
 - Use `gh` CLI for GitHub collection.
-- For the Teams channel collection, prefer the `workiq` MCP server (a direct Microsoft Graph gateway)
-  using the two-phase enumerate-then-fetch pattern described in stage 1. Fall back to Microsoft 365
-  Copilot / Work IQ grounding only when `workiq` Graph access is unavailable; that grounding search
-  is unreliable (empty results, "expired records", or timeouts) and its timeout is not
-  CLI-configurable because the server is host-injected.
+- For the Teams channel collection, enumerate threads with the Microsoft Graph channel-message
+  **`delta`** endpoint via `workiq-fetch` (`$filter=lastModifiedDateTime gt {periodStart}`), which is
+  complete and deterministic, then fetch bodies and reply counts by message id. Do not enumerate via
+  Graph `/messages` (only the 10 most-recently-active threads channel-wide). bizchat (`workiq-ask`) is
+  a last-resort fallback. See stage 1 for the full pattern.
+- Reusable helper scripts live in `scripts/`: `parse_delta.py` (normalize a `delta` response to
+  in-period threads), `parse_threads.py` (strip message bodies / count bot-vs-human replies),
+  `compute_metrics.py` (stage 3 metrics, charts, reports), `build_ppt.py` (stage 5 deck). Each takes
+  the metric folder as an argument and derives the period from the folder name / `progress\period.json`.
 - Persist raw responses to files before deriving filtered or summarized datasets.
 
 ## Error handling

@@ -196,93 +196,93 @@ Suggested shape:
 
 ## Teams collection
 
-For each language entry, collect all top-level posts and replies from that language's Teams channel during the requested period before any filtering.
+For each language entry, collect all top-level posts (and their replies) from that language's Teams
+channel during the requested period before any filtering.
 
-### Preferred method: two-phase Microsoft Graph via the `workiq` MCP server
+Use **Microsoft Graph via `workiq-fetch`** for everything: enumerate top-level threads with the
+channel-message **`delta`** endpoint filtered by `lastModifiedDateTime`, then fetch bodies and reply
+counts by message id. This is deterministic and complete (real message ids + exact timestamps) — much
+better than the plain `/messages` list or bizchat grounding.
 
-The `m365-copilot` grounding search is unreliable for this task: in practice it returns empty
-results, "expired records" errors, or repeatedly times out (`-32001 Request timed out`) for busier
-channels. Its per-call timeout also cannot be raised from the CLI config, because `m365-copilot`,
-`mail`, and `workiq` are host-injected MCP servers (not listed in `~/.copilot/mcp-config.json`).
-
-Prefer the `workiq` MCP server instead. It is a direct Microsoft Graph gateway (`workiq-fetch`
-takes Graph entity paths), which is authoritative and returns real message ids, timestamps, bodies,
-and permalinks. Use a two-phase enumerate-then-fetch pattern:
-
-Phase 1 — enumerate recent threads per channel:
-
-```text
-/teams/{team-id}/channels/{channel-id}/messages?$select=id,createdDateTime,from,body,webUrl&$top=10
-```
-
-Phase 2 — fetch replies for each in-period thread (batch many message ids in one `workiq-fetch`
-call by passing multiple `entityUrls`):
-
-```text
-/teams/{team-id}/channels/{channel-id}/messages/{message-id}/replies?$select=id,createdDateTime,from&$top=10
-```
-
-Derive the ids directly from the language entry's `Teams link` in `sdk-source.md`:
+Derive the Graph ids directly from the language entry's `Teams link` in `sdk-source.md`:
 - `{team-id}` = the `groupId` query parameter (e.g. `3e17dcb0-4257-4a30-b843-77f47f1d4121`).
 - `{channel-id}` = the URL-decoded channel segment, i.e. `19%3A...%40thread.skype` becomes
   `19:...@thread.skype` (e.g. Java `19:5e673e41085f4a7eaaf20823b85b2b53@thread.skype`).
 - `{tenantId}` (for permalinks) = the `tenantId` query parameter.
 
-Classify each reply's `from` as bot vs human: `from.application.applicationIdentityType == "bot"`
-(for example the `Azure SDK Q&A Bot`) is a bot; `from.user` is a human. Record both total and
-human reply counts so stage 3 can average either.
-
-#### `workiq` constraints to plan around (important)
-- Each collection is hard-capped at 10 items. Pagination is rejected (`$skiptoken` / `$skip not
-  permitted`), and `$filter` on `createdDateTime`, `$orderby`, and `$expand=replies` are not
-  usable (replies are stripped from message output). So you get the 10 most-recently-active threads
-  per channel, and at most 10 replies per thread.
-- Because of the 10-item cap, run the metric soon after the period ends; for these low-traffic
-  channels the top-10 recent threads capture most of the period, but coverage is a floor, not an
-  exhaustive census. Any thread or reply page that hits 10 (look for `@odata.nextLink`) is a lower
-  bound — flag it (e.g. `replyCountCapped: true`) and document it in `progress\stage-1.md`.
-- `workiq-fetch` output larger than 20 KB is saved to a temp file rather than returned inline; parse
-  it with `json.JSONDecoder().raw_decode(...)` because trailing `CorrelationId:` text prevents a
-  plain `json.load`. Batching two or more channels in one call reliably forces the temp-file path.
-- Set `$env:PYTHONIOENCODING="utf-8"` before any Python that touches the bodies; some channel names
-  and posts contain emoji (e.g. the JS/TS channel) and will otherwise fail with a gbk codec error.
-
-### Fallback method: Microsoft 365 Copilot / Work IQ grounding
-
-Only if `workiq` Graph access is unavailable, fall back to `m365-copilot`. Ask for structured output:
-- thread identifier
-- top-level post author
-- top-level post timestamp
-- full original top-level post body
-- normalized top-level post body if the tool returns both
-- reply count
-- replies array with author, timestamp, full original body, and normalized body if available
-- explicit links present in the post or replies
-
-Ask the tool to avoid summarizing, shortening, or paraphrasing the post body. The goal is to capture the original wording, because abbreviated text can hide the PR title or library name needed for matching.
-
-Prefer a prompt like:
+### Phase 1 — enumerate all top-level threads with `delta` (one call per channel)
 
 ```text
-From the Teams channel at <channel-url>, list all top-level posts and all replies created between <periodStart> and <periodEnd>. Return structured JSON only. Preserve the full original text of each post and reply; do not summarize or paraphrase. For each thread include threadId, postAuthor, postTime, originalPostBody, normalizedPostBody if available, replyCount, replies[{author,time,originalBody,normalizedBody}], and any explicit links found in the post or replies.
+/teams/{team-id}/channels/{channel-id}/messages/delta?$select=id,createdDateTime,lastModifiedDateTime,replyToId,subject,from&$filter=lastModifiedDateTime gt {periodStart}T00:00:00Z&$top=50
 ```
 
-### Persistence (either method)
+Key facts (validated empirically):
+- `delta` returns **all** top-level threads with activity since `{periodStart}` — real ids, exact
+  `createdDateTime`/`lastModifiedDateTime`, subject, and author. Items with `replyToId == null` are
+  the thread starters (keep those); items with a `replyToId` are replies (ignore in phase 1).
+- Only `gt` is allowed on `lastModifiedDateTime` (no `lt`); `$top` max is `50`; `$expand` and `$skip`/
+  `$skiptoken` are rejected by workiq, so you cannot follow the `@odata.nextLink`. This is fine when a
+  single page covers the period.
+- Filter client-side to the period by `createdDateTime` (threads created earlier but merely active in
+  the period are captured too — exclude them from the created-in-period count, but you may note them).
+- **Completeness guard.** Because you cannot page, verify the single page is not truncated: re-issue
+  the same query with a **later** `gt` (e.g. `gt {periodStart+15d}`) and confirm every returned id
+  already appears in the first page. If the later query surfaces new ids, the page was truncated —
+  tighten with several `gt` thresholds across the month and union by id. A page well under the 50 cap
+  that passes this check is complete. (Busy channels rarely exceed ~25 June-active threads.)
 
-Regardless of method, preserve `Azure/azure-rest-api-specs` PR links and validation-failure wording when present. These threads may later be retained even when they are not AutoPR review requests, because they can represent language-channel SDK validation or generation-failure triage for the same reporting period.
+Parse the saved response with `scripts/parse_delta.py <saved-output> {periodStart} {periodEnd}`, which
+drops replies, filters to the period by `createdDateTime`, and emits normalized records
+(`threadId`, `postAuthor`, `postTime`, `subject`, `createdInPeriod`). Persist to
+`details\<language-key>\teams-raw.json`.
+
+### Phase 2 — fetch bodies and reply counts with `workiq-fetch`
+
+Fetch full bodies (needed to classify threads in stage 2, especially empty-subject ones) — batch many
+ids in one call via multiple `entityUrls`:
+
+```text
+/teams/{team-id}/channels/{channel-id}/messages/{message-id}?$select=id,from,subject,body,webUrl
+```
+
+Fetch replies by id to count them (only needed for threads you will retain in stage 2):
+
+```text
+/teams/{team-id}/channels/{channel-id}/messages/{message-id}/replies?$select=id,from,createdDateTime&$top=50
+```
+
+Parse both with `scripts/parse_threads.py <saved-output>`: it strips HTML bodies to plain text,
+extracts GitHub links, and for `/replies` responses prints `parent=<id> total/human/bot` counts.
+Classify each reply's `from` as bot vs human: `from.application.applicationIdentityType == "bot"`
+(for example the `Azure SDK Q&A Bot`) is a bot; `from.user` is a human. Record both total and human
+reply counts so stage 3 can average either. The reply page is capped at 50 — any thread whose reply
+page hits 50 (look for `@odata.nextLink`) is a lower bound; flag it (`replyCountCapped: true`).
+
+### Fallback — bizchat (`workiq-ask`) grounding
+Only if `delta` is unavailable for a channel: `workiq-ask` grounding can enumerate by content/date but
+is relevance-ranked, truncated for wide windows (use ~1-week windows), non-deterministic, and its
+message ids are unreliable (it may hallucinate `parentMessageId`s). Prefer `delta` in all cases.
+
+### Tooling gotchas
+- `workiq-fetch` output larger than 20 KB is saved to a temp file rather than returned inline; parse
+  Graph JSON with `json.JSONDecoder().raw_decode(...)` because trailing text (e.g. `CorrelationId:`)
+  prevents a plain `json.load` (the `scripts/parse_*.py` helpers already handle this).
+- Set `$env:PYTHONIOENCODING="utf-8"` before any Python that touches the bodies; some channel names
+  and posts contain emoji (e.g. the JS/TS channel) and will otherwise fail with a gbk codec error.
+- The older `m365-copilot` MCP server is deprecated/host-injected and unreliable; use `workiq-fetch`.
+
+### Persistence
+
+Preserve `Azure/azure-rest-api-specs` PR links and validation-failure wording when present. These
+threads may later be retained even when they are not AutoPR review requests, because they can
+represent language-channel SDK validation or generation-failure triage for the same reporting period.
 
 Persist:
-- the raw tool response to `details\<language-key>\teams-graph-raw.json` (workiq) or
-  `details\<language-key>\teams-raw-response.txt` (m365-copilot fallback)
+- the raw `delta` / body / reply responses (temp-file copies are fine) for audit
 - the normalized in-period thread list to `details\<language-key>\teams-raw.json`
+- the retained + reply-counted threads to `details\<language-key>\teams-filtered.json` (stage 2)
 
 If a response cannot be returned as strict JSON, save the raw response first and then create a normalized JSON file beside it.
-
-If the channel data is too large for one request:
-1. split the period into smaller windows
-2. collect each window separately
-3. persist the per-window raw files in `details\<language-key>\teams-raw-parts\`
-4. merge them into `details\<language-key>\teams-raw.json`
 
 ## Teams enrichment
 
