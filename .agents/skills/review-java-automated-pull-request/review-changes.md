@@ -1,5 +1,14 @@
 # Review Changes
 
+## Check the package api-version and stable-vs-preview consistency
+
+Find the api-version(s) the package is generated against:
+
+1. Read `CHANGELOG.md` (e.g. `Package api-version 2026-03-01-preview.`).
+2. Else use the `apiVersions` property in `src/main/resources/META-INF/<module>_metadata.json` — an object keyed by RP namespace (e.g. `"apiVersions": {"Microsoft.AzureArcData": "2026-03-01-preview"}`), possibly with multiple entries.
+
+If **any** api-version is `-preview`, the package must be **beta**, not stable (GA). Flag a stable-version-on-preview-api mismatch and ask the author for clarification.
+
 ## Watch for incorrect LRO headers and response models
 
 There should be no new `<ClientMethod>Response` and `<ClientMethod>Headers` model classes where the `<ClientMethod>Headers` model contains `location` or `retry-after`.
