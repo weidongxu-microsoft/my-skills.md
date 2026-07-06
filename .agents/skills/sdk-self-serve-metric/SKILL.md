@@ -65,6 +65,7 @@ Successful completion produces:
   - AutoPR count and average human communication per PR by language in one combined graph
   - SDK generation related Teams post count by language
 - an optional PowerPoint deck when the user explicitly asks for one
+- an optional per-service communication breakdown when the user asks to group by service (see "Optional: service breakdown")
 
 ## Success criteria
 
@@ -147,6 +148,32 @@ If the user asks to stop after a stage, still persist that stage's outputs and c
 Stage 4 is intentionally reserved for future required analysis work and is not part of the current skill behavior.
 
 Stage 5 is optional. Do not create a PowerPoint deck unless the user explicitly asks for it.
+
+## Optional: service breakdown
+
+When the user asks to group AutoPR comments and Teams posts by "service" (rather
+than by language), run after Stage 3 using the persisted stage data:
+
+```text
+python .agents/skills/sdk-self-serve-metric/scripts/group_by_service.py self-serve-metric-<yyyymm> [--top N]
+```
+
+It reads `details/<lang>/{github-prs-created.json, github-pr-comments.json,
+teams-filtered.json}`, derives a language-neutral service token from the AutoPR
+library name in each PR title and each kept Teams thread `reason`, and writes:
+- `result/service-communication-<yyyymm>.json` — per service x language x channel counts
+- `result/service-communication-<yyyymm>.png` — grouped stacked bar chart: two bars
+  per service (left = AutoPR human comments, right hatched = Teams human replies),
+  each stacked by language, sorted by total communication
+
+Notes on the service token:
+- The library name differs per language (e.g. Java abbreviates and Go uses a
+  `<service>/arm<submodule>` path), so `norm_lib()` canonicalizes it; a small
+  `ALIAS` map handles the Java abbreviations that would not otherwise line up.
+- Teams threads with no `[AutoPR <lib>]` reference (SDK validation / breaking-change
+  triage) are bucketed under `(unattributed-triage)` and shown as a separate final bar.
+- `--top N` keeps the N most-discussed services and folds the rest into `(others)`
+  (default 20).
 
 ## Period handling
 
