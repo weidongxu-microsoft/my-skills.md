@@ -1,9 +1,9 @@
 ---
-name: check-unreleased-mgmt-sdk
-description: Lists Azure Java management SDK modules (azure-resourcemanager-*) whose latest CHANGELOG entry is a dated release rather than "(Unreleased)", grouped by release month. Use for requests like "check unreleased mgmt sdk", "which azure-resourcemanager modules have no Unreleased section", or "list mgmt modules whose last changelog item is not Unreleased".
+name: query-unreleased-mgmt-sdk
+description: Lists Azure Java management SDK modules (azure-resourcemanager-*) whose latest CHANGELOG entry is a dated release rather than "(Unreleased)", grouped by release month. Use for requests like "query unreleased mgmt sdk", "which azure-resourcemanager modules have no Unreleased section", or "list mgmt modules whose last changelog item is not Unreleased".
 ---
 
-# Check Unreleased Management SDK
+# Query Unreleased Management SDK
 
 Report which `azure-resourcemanager-*` modules in `azure-sdk-for-java` have a
 CHANGELOG whose **latest (top) entry is a dated release** — i.e. the newest
@@ -49,7 +49,7 @@ Run the bundled script from the skill folder:
 
 ```powershell
 $env:PYTHONIOENCODING="utf-8"
-python .agents/skills/check-unreleased-mgmt-sdk/scripts/check_unreleased.py --repo c:/github_lab/azure-sdk-for-java
+python .agents/skills/query-unreleased-mgmt-sdk/scripts/check_unreleased.py --repo c:/github_lab/azure-sdk-for-java
 ```
 
 The script will:
