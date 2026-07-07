@@ -155,7 +155,7 @@ When the user asks to group AutoPR comments and Teams posts by "service" (rather
 than by language), run after Stage 3 using the persisted stage data:
 
 ```text
-python .agents/skills/sdk-self-serve-metric/scripts/group_by_service.py self-serve-metric-<yyyymm> [--top N]
+python .agents/skills/sdk-self-serve-metric/scripts/group_by_service.py self-serve-metric-<yyyymm> [--top N] [--exclude LANG[,LANG]]
 ```
 
 It reads `details/<lang>/{github-prs-created.json, github-pr-comments.json,
@@ -181,6 +181,12 @@ Notes on the service token:
   `SERVICE_ALIASES` / `NAMED_KEYWORDS` rather than hardcoding per month.
 - `--top N` keeps the N most-discussed services and folds the rest into `(others)`
   (default 20).
+- `--exclude LANG[,LANG]` drops one or more languages from the aggregation and
+  appends a `_without_<LANG>` suffix to both output files (e.g.
+  `service-communication-<yyyymm>_without_net.{json,png}`), so the filtered report
+  sits alongside the full one. `net` is accepted as an alias for the `dotnet`
+  folder key. Useful for an ".NET-excluded" view since .NET is consistently the
+  heaviest reviewer.
 - One-off, period-specific service merges (two tokens that happen to be the same
   service that month) do **not** belong in the script. Put a
   `service-aliases.json` object `{"<from>": "<to>"}` in the metric folder and the

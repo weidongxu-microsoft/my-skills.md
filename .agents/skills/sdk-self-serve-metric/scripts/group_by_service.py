@@ -35,6 +35,18 @@ TOP = 20  # default: keep the most-discussed services readable, fold the rest
 if "--top" in sys.argv:
     TOP = int(sys.argv[sys.argv.index("--top") + 1])
 
+# Optionally exclude one or more language keys (e.g. --exclude net). Output
+# files then get a "_without_<keys>" suffix so they sit alongside the full report.
+# "net" is accepted as an alias for the "dotnet" folder key.
+EXCLUDE_ALIASES = {"net": "dotnet"}
+EXCLUDE_TOKENS = []   # as typed by the user, used for the filename suffix
+EXCLUDE_LANGS = []    # resolved to actual language folder keys
+SUFFIX = ""
+if "--exclude" in sys.argv:
+    EXCLUDE_TOKENS = [x.strip() for x in sys.argv[sys.argv.index("--exclude") + 1].split(",") if x.strip()]
+    EXCLUDE_LANGS = [EXCLUDE_ALIASES.get(x, x) for x in EXCLUDE_TOKENS]
+    SUFFIX = "_without_" + "_".join(EXCLUDE_TOKENS)
+
 det = os.path.join(root, "details")
 res = os.path.join(root, "result")
 periodKey = os.path.basename(root.rstrip("/\\")).replace("self-serve-metric-", "")
@@ -183,7 +195,7 @@ def human_comment_count(rec):
     return n
 
 
-langs = discover_langs(det)
+langs = [l for l in discover_langs(det) if l not in EXCLUDE_LANGS]
 
 # service -> lang -> {"autopr": int, "teams": int}
 data = {}
@@ -262,7 +274,7 @@ out_json = {
         for s in services
     ],
 }
-json.dump(out_json, open(os.path.join(res, f"service-communication-{periodKey}.json"), "w", encoding="utf-8"),
+json.dump(out_json, open(os.path.join(res, f"service-communication-{periodKey}{SUFFIX}.json"), "w", encoding="utf-8"),
           indent=2, ensure_ascii=False)
 
 # ---- grouped stacked bar chart ----
@@ -289,8 +301,9 @@ for offset, channel, hatch in ((-bw / 2 - 0.02, "autopr", None), (bw / 2 + 0.02,
 ax.set_xticks(x)
 ax.set_xticklabels(services, rotation=45, ha="right", fontsize=8)
 ax.set_ylabel("Human communication count")
-ax.set_title(f"AutoPR comments and Teams replies by service, stacked by language ({periodKey})\n"
-             "Left bar = AutoPR human comments; right (hatched) bar = Teams human replies")
+ax.set_title(f"AutoPR comments and Teams replies by service, stacked by language ({periodKey})"
+             + (f" — excluding {', '.join(DISPLAY_NAMES.get(l, l) for l in EXCLUDE_LANGS)}" if EXCLUDE_LANGS else "")
+             + "\nLeft bar = AutoPR human comments; right (hatched) bar = Teams human replies")
 
 lang_handles = [plt.Rectangle((0, 0), 1, 1, color=COLORS.get(l, "#888")) for l in langs]
 lang_labels = [DISPLAY_NAMES.get(l, l) for l in langs]
@@ -302,7 +315,7 @@ ax.legend(ch_handles, ["AutoPR comments", "Teams replies"], title="Channel", loc
           bbox_to_anchor=(1.0, 0.72))
 
 fig.tight_layout()
-fig.savefig(os.path.join(res, f"service-communication-{periodKey}.png"), dpi=130)
+fig.savefig(os.path.join(res, f"service-communication-{periodKey}{SUFFIX}.png"), dpi=130)
 plt.close(fig)
 
 print("DONE", periodKey, "services:", len(services), "langs:", langs)
