@@ -49,18 +49,27 @@ COLORS = {
     "typescript-javascript": "#dd6b20", "go": "#e53e3e",
 }
 
-# Canonicalize service tokens that differ across languages or over time:
-# - Java abbreviates some segments (map onto the fuller token others use).
-# - monitoraccounts is the same service as monitorworkspaces (final SDK name
-#   monitor-workspaces), so fold it in.
+# Java abbreviates some service segments; map them onto the fuller token that
+# the other languages use so they line up in the same service bucket. Period-
+# specific one-off merges do NOT belong here - put them in a per-run
+# service-aliases.json in the metric folder (see load of PERIOD_ALIAS below).
 ALIAS = {
     "containerservicepreparedimgspec": "containerservicepreparedimagespecification",
     "napsteromniagent": "napsteromniagentapi",
-    "monitoraccounts": "monitorworkspaces",
 }
 
 EXCLUDE_EXACT = {"Copilot", "copilot-pull-request-reviewer", "azure-sdk", "app/azure-sdk-automation"}
 UNATTRIBUTED = "(unattributed-triage)"
+
+# Optional per-run, one-off service merges: a JSON object {"<from>": "<to>"} in
+# <metric-folder>/service-aliases.json. Keys/values are matched against the final
+# normalized service token. Use this for period-specific special cases (e.g. two
+# tokens that happen to be the same service that month) instead of hardcoding
+# them into ALIAS above.
+PERIOD_ALIAS = {}
+_pa_path = os.path.join(root, "service-aliases.json")
+if os.path.exists(_pa_path):
+    PERIOD_ALIAS = {k.lower(): v.lower() for k, v in json.load(open(_pa_path, encoding="utf-8")).items()}
 
 # Freeform service names that appear in Teams triage-thread reasons but differ
 # from the AutoPR-derived token; map the normalized freeform form -> canonical.
@@ -113,7 +122,8 @@ def norm_lib(lib):
                 out = out + nxt
         s = out
     s = re.sub(r"[^a-z0-9]", "", s)
-    return ALIAS.get(s, s)
+    s = ALIAS.get(s, s)
+    return PERIOD_ALIAS.get(s, s)
 
 
 def service_from(text):
@@ -180,6 +190,7 @@ data = {}
 
 
 def bump(service, lang, channel, amount):
+    service = PERIOD_ALIAS.get(service, service)
     data.setdefault(service, {}).setdefault(lang, {"autopr": 0, "teams": 0})
     data[service][lang][channel] += amount
 

@@ -181,6 +181,11 @@ Notes on the service token:
   `SERVICE_ALIASES` / `NAMED_KEYWORDS` rather than hardcoding per month.
 - `--top N` keeps the N most-discussed services and folds the rest into `(others)`
   (default 20).
+- One-off, period-specific service merges (two tokens that happen to be the same
+  service that month) do **not** belong in the script. Put a
+  `service-aliases.json` object `{"<from>": "<to>"}` in the metric folder and the
+  script folds `<from>` into `<to>` for that run only (e.g. June 2026 merges
+  `monitoraccounts` into `monitorworkspaces`).
 
 ## Period handling
 
