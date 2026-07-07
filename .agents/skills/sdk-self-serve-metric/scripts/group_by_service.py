@@ -59,6 +59,31 @@ ALIAS = {
 EXCLUDE_EXACT = {"Copilot", "copilot-pull-request-reviewer", "azure-sdk", "app/azure-sdk-automation"}
 UNATTRIBUTED = "(unattributed-triage)"
 
+# Freeform service names that appear in Teams triage-thread reasons but differ
+# from the AutoPR-derived token; map the normalized freeform form -> canonical.
+SERVICE_ALIASES = {
+    "napster": "napsteromniagentapi",
+    "bulkactions": "computebulkactions",
+    "computebulkactions": "computebulkactions",
+    "resiliencemanagement": "resiliencemanagement",
+    "azureresiliencemanagement": "resiliencemanagement",
+    "trafficmanager": "trafficmanager",
+    "networkcloud": "networkcloud",
+    "computeschedule": "computeschedule",
+    "billingtrust": "billingtrust",
+    "microsoftvalidate": "microsoftvalidate",
+}
+# Named services (not necessarily present in the AutoPR vocabulary) to look for
+# anywhere in a triage reason when there is no usable parenthetical hint.
+NAMED_KEYWORDS = {
+    "billingtrust": "billingtrust",
+    "microsoftvalidate": "microsoftvalidate",
+    "trafficmanager": "trafficmanager",
+    "resiliencemanagement": "resiliencemanagement",
+}
+# Parenthetical contents that are not a service (dates handled separately).
+NON_SERVICE_PARENS = {"enum", "specmigration", "specmigrations"}
+
 
 def is_bot(author):
     return author is None or author in EXCLUDE_EXACT or author.endswith("[bot]")
@@ -93,6 +118,42 @@ def service_from(text):
     return norm_lib(m.group(1)) if m else None
 
 
+def service_from_reason(reason, known):
+    """Resolve a service token from a Teams thread reason.
+
+    Order: explicit [AutoPR <lib>]; then a "(Service)" parenthetical hint; then a
+    substring match against the known AutoPR service vocabulary (longest wins);
+    then a small named-keyword fallback. Returns None if nothing sensible matches
+    (those threads stay in the unattributed-triage bucket).
+    """
+    reason = reason or ""
+    svc = service_from(reason)
+    if svc:
+        return svc
+    # explicit parenthetical hint, e.g. "... (Napster)", "... (NetworkCloud)"
+    for grp in re.findall(r"\(([^)]+)\)", reason):
+        g = grp.strip()
+        if "#" in g or re.match(r"^\d{4}-\d{2}-\d{2}$", g):
+            continue  # PR/issue ref or a date, not a service
+        key = re.sub(r"[^a-z0-9]", "", g.lower())
+        if not key or key in NON_SERVICE_PARENS or re.match(r"^[a-z]{0,4}\d+$", key):
+            continue
+        return SERVICE_ALIASES.get(key, ALIAS.get(key, key))
+    # substring scan against the known AutoPR service vocabulary (longest match)
+    low = re.sub(r"[^a-z0-9]", "", reason.lower())
+    best = None
+    for tok in known:
+        if len(tok) >= 5 and tok in low and (best is None or len(tok) > len(best)):
+            best = tok
+    if best:
+        return best
+    # named services that may not be in the vocabulary
+    for kw, canon in NAMED_KEYWORDS.items():
+        if kw in low:
+            return canon
+    return None
+
+
 def discover_langs(details_dir):
     present = [d for d in os.listdir(details_dir) if os.path.isdir(os.path.join(details_dir, d))]
     ordered = [k for k in ORDER if k in present]
@@ -120,21 +181,31 @@ def bump(service, lang, channel, amount):
     data[service][lang][channel] += amount
 
 
+# Pass 1: AutoPR human comments. Also collect the known-service vocabulary from
+# every AutoPR title so pass 2 can attribute freeform triage reasons to services.
+known_services = set()
 for lang in langs:
     created = {x["number"]: x.get("title") for x in load(os.path.join(det, lang, "github-prs-created.json"))}
+    for title in created.values():
+        s = service_from(title)
+        if s:
+            known_services.add(s)
     for rec in load(os.path.join(det, lang, "github-pr-comments.json")):
         n = human_comment_count(rec)
         if n <= 0:
             continue
         svc = service_from(created.get(rec["number"])) or UNATTRIBUTED
         bump(svc, lang, "autopr", n)
+
+# Pass 2: Teams human replies, attributing triage reasons to services when possible.
+for lang in langs:
     for t in load(os.path.join(det, lang, "teams-filtered.json")):
         if not t.get("kept"):
             continue
         n = t.get("humanReplyCount", 0) or 0
         if n <= 0:
             continue
-        svc = service_from(t.get("reason")) or UNATTRIBUTED
+        svc = service_from_reason(t.get("reason"), known_services) or UNATTRIBUTED
         bump(svc, lang, "teams", n)
 
 

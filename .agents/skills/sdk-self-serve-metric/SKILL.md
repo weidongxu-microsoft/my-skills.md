@@ -170,8 +170,15 @@ Notes on the service token:
 - The library name differs per language (e.g. Java abbreviates and Go uses a
   `<service>/arm<submodule>` path), so `norm_lib()` canonicalizes it; a small
   `ALIAS` map handles the Java abbreviations that would not otherwise line up.
-- Teams threads with no `[AutoPR <lib>]` reference (SDK validation / breaking-change
-  triage) are bucketed under `(unattributed-triage)` and shown as a separate final bar.
+- Teams triage threads (SDK validation / breaking-change) have no `[AutoPR <lib>]`
+  reference, so `service_from_reason()` attributes them by: an explicit `(Service)`
+  parenthetical in the thread reason, then a substring match against the known
+  AutoPR service vocabulary, then a small `SERVICE_ALIASES` / `NAMED_KEYWORDS` map
+  (e.g. `Napster -> napsteromniagentapi`, `Bulkactions -> computebulkactions`,
+  `billingtrust`). Only threads that name no service (generic emitter bugs, plain
+  breaking-change scaffolding/enum reviews) stay under `(unattributed-triage)`,
+  shown as a separate final bar. When a triage reason names a new service, extend
+  `SERVICE_ALIASES` / `NAMED_KEYWORDS` rather than hardcoding per month.
 - `--top N` keeps the N most-discussed services and folds the rest into `(others)`
   (default 20).
 
