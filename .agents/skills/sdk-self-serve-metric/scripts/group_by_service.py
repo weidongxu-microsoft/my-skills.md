@@ -49,11 +49,14 @@ COLORS = {
     "typescript-javascript": "#dd6b20", "go": "#e53e3e",
 }
 
-# Java abbreviates some service segments; map them onto the fuller token that
-# the other languages use so they line up in the same service bucket.
+# Canonicalize service tokens that differ across languages or over time:
+# - Java abbreviates some segments (map onto the fuller token others use).
+# - monitoraccounts is the same service as monitorworkspaces (final SDK name
+#   monitor-workspaces), so fold it in.
 ALIAS = {
     "containerservicepreparedimgspec": "containerservicepreparedimagespecification",
     "napsteromniagent": "napsteromniagentapi",
+    "monitoraccounts": "monitorworkspaces",
 }
 
 EXCLUDE_EXACT = {"Copilot", "copilot-pull-request-reviewer", "azure-sdk", "app/azure-sdk-automation"}
