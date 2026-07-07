@@ -32,6 +32,7 @@ Stage 1 progress
 - [ ] Collect currently open AutoPRs created within the period for each language
 - [ ] Collect comments for the GitHub PRs in scope for each language
 - [ ] Collect all posts and replies from each language Teams channel during the period
+- [ ] Collect all posts and replies from the shared "SDK release support" channel during the period
 - [ ] Persist raw and normalized files in details\
 - [ ] Write stage notes to progress\stage-1.md
 ```
@@ -283,6 +284,36 @@ Persist:
 - the retained + reply-counted threads to `details\<language-key>\teams-filtered.json` (stage 2)
 
 If a response cannot be returned as strict JSON, save the raw response first and then create a normalized JSON file beside it.
+
+### Shared "SDK release support" channel (not language-specific)
+
+Besides the per-language channels in `sdk-source.md`, also collect the shared
+**"SDK release support"** channel. It is a general help channel for release-time
+questions (release-planner/tooling issues, release-pipeline failures, SDK generation
+questions), so its threads do **not** map 1-to-1 to a single language or AutoPR.
+
+- team-id `3e17dcb0-4257-4a30-b843-77f47f1d4121`, channel-id
+  `19:084875bb626242ed95f3ac8dddfaa12a@thread.skype`.
+- Collect with the same `delta` (Phase 1) + body/reply (Phase 2) procedure as the
+  per-language channels, including the completeness guard (busy channel — the single
+  page carries an `@odata.nextLink`, so verify by re-issuing with later `gt`
+  thresholds and unioning by id; later thresholds must surface no new ids).
+- Persist to `details\sdk-release-support\teams-raw.json` (normalized thread list with
+  `subject`, `body`, `humanReplyCount`, `botReplyCount`).
+
+Classify each thread in stage 2 into:
+- **service-attributable** — the body names a service via `[AutoPR <lib>]`, a provider
+  namespace (e.g. `Microsoft.Validate`), or a package name (e.g.
+  `Azure.ResourceManager.Compute.BulkActions`, `azure-mgmt-computevalidation`); attribute
+  it to the same normalized service token used by `group_by_service.py`, tagged with a
+  distinct `release-support` channel so it is not confused with per-language Teams.
+- **general tooling/process** — release-planner migration, agent auth, doc-publishing
+  incidents, and announcements that name no service; keep these in a separate
+  `(release-support-tooling)` bucket rather than forcing a service.
+
+Because a service-attributable release-support thread is a *different* thread from the
+per-language Teams threads, counting its human replies is additive, not double-counting;
+keep it under its own channel so the report can show it separately.
 
 ## Teams enrichment
 

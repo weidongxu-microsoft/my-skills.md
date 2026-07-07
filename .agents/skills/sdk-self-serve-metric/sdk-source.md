@@ -37,3 +37,11 @@
 - Lib name pattern: `sdk-resourcemanager/*/arm*`
 - Teams channel: `Language - Go`
 - Teams link: `https://teams.microsoft.com/l/channel/19%3A104f00188bb64ef48d1b4d94ccb7a361%40thread.skype/Language%20-%20Go?groupId=3e17dcb0-4257-4a30-b843-77f47f1d4121&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47`
+
+# SDK release support (shared, not language-specific)
+
+- Kind: shared cross-language release help channel (threads do **not** map 1-to-1 to a language or AutoPR)
+- GitHub repository: (n/a — questions span all repos)
+- Teams channel: `SDK release support`
+- Teams link: `https://teams.microsoft.com/l/channel/19%3A084875bb626242ed95f3ac8dddfaa12a%40thread.skype/SDK%20release%20support?groupId=3e17dcb0-4257-4a30-b843-77f47f1d4121&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47`
+- Handling: collect with the same delta/body/reply procedure, then classify threads into service-attributable vs general tooling/process (see `stage-1-collect.md`). Do not treat as a per-language entry.
