@@ -289,6 +289,8 @@ For Teams, collect all posts and replies first. Do not discard bot-authored cont
 
 During stage 2, mark whether each thread is related to the current language entry. This includes both in-scope AutoPR discussion threads and language-channel triage threads about SDK validation or generation failures linked to `Azure/azure-rest-api-specs` PRs. Preserve enough metadata so stage 3 can compute either all-reply counts or human-only counts later if needed.
 
+**Excluding bot messages.** Classify every message by its `from` field: `from.application` (for example the `Azure SDK Q&A Bot`) is a bot; `from.user` is a human. The human reply metric (`humanReplyCount`) counts only `from.user` replies; keep the bot-inclusive `replyCount` alongside it. In practice, top-level posts are human-authored (people requesting approval/review) and bots appear only as replies, so no thread is bot-only; still classify by `from` rather than assuming, so a future bot-started thread would be handled correctly.
+
 If a Teams thread cannot be confidently matched, keep it out of the filtered dataset and record the ambiguity in `progress\stage-2.md`.
 
 When a thread does not contain an explicit PR URL, it can still be in scope if the post text or reply text can be matched to an AutoPR title, a generation identifier, or an inferred library from the current language entry.
