@@ -45,6 +45,13 @@ def main():
                 if kind == "human": humans += 1
                 elif kind == "bot": bots += 1
             print(f"  REPLIES parent={pid} total={len(vals)} human={humans} bot={bots}")
+            for m in vals:
+                author, kind = author_of(m)
+                body = strip_html((m.get("body") or {}).get("content", ""))
+                links = gh_links(body)
+                print(f"    - id={m.get('id')} | {author} ({kind}) | {m.get('createdDateTime')}")
+                print(f"      body: {body[:400]}")
+                if links: print(f"      GH: {links}")
         else:
             m = d
             author, kind = author_of(m)

@@ -33,7 +33,7 @@ Stage 1 progress
 - [ ] Collect comments for the GitHub PRs in scope for each language
 - [ ] Collect all posts and replies from each language Teams channel during the period
 - [ ] Collect all posts and replies from the shared "SDK release support" channel during the period
-- [ ] Persist raw and normalized files in details\
+- [ ] Persist raw and normalized files in details\ (keep every pulled field, including full reply bodies)
 - [ ] Write stage notes to progress\stage-1.md
 ```
 
@@ -240,21 +240,25 @@ drops replies, filters to the period by `createdDateTime`, and emits normalized 
 ### Phase 2 — fetch bodies and reply counts with `workiq-fetch`
 
 Fetch full bodies (needed to classify threads in stage 2, especially empty-subject ones) — batch many
-ids in one call via multiple `entityUrls`:
+ids in one call via multiple `entityUrls`. Select every field worth keeping (the raw pull is
+expensive, so persist all of it — later stages can ignore what they don't need):
 
 ```text
-/teams/{team-id}/channels/{channel-id}/messages/{message-id}?$select=id,from,subject,body,webUrl
+/teams/{team-id}/channels/{channel-id}/messages/{message-id}?$select=id,from,subject,body,webUrl,createdDateTime,lastModifiedDateTime,importance,attachments,mentions,reactions
 ```
 
-Fetch replies by id to count them (only needed for threads you will retain in stage 2):
+Fetch replies by id, and **request their bodies too** (adding `body` to `$select` costs no extra
+call — it is the same one request per thread, only a slightly larger response):
 
 ```text
-/teams/{team-id}/channels/{channel-id}/messages/{message-id}/replies?$select=id,from,createdDateTime&$top=50
+/teams/{team-id}/channels/{channel-id}/messages/{message-id}/replies?$select=id,from,createdDateTime,body,attachments,mentions,reactions&$top=50
 ```
 
 Parse both with `scripts/parse_threads.py <saved-output>`: it strips HTML bodies to plain text,
-extracts GitHub links, and for `/replies` responses prints `parent=<id> total/human/bot` counts.
-Classify each reply's `from` as bot vs human: `from.application.applicationIdentityType == "bot"`
+extracts GitHub links, and for `/replies` responses prints `parent=<id> total/human/bot` counts plus
+each reply's author + stripped body. Persist **all** reply detail (author, kind, time, body, GitHub
+links) into the raw thread record — do not discard reply bodies just because the immediate next stage
+only needs the counts. Classify each reply's `from` as bot vs human: `from.application.applicationIdentityType == "bot"`
 (for example the `Azure SDK Q&A Bot`) is a bot; `from.user` is a human. Record both total and human
 reply counts so stage 3 can average either. The reply page is capped at 50 — any thread whose reply
 page hits 50 (look for `@odata.nextLink`) is a lower bound; flag it (`replyCountCapped: true`).
@@ -283,6 +287,35 @@ Persist:
 - the normalized in-period thread list to `details\<language-key>\teams-raw.json`
 - the retained + reply-counted threads to `details\<language-key>\teams-filtered.json` (stage 2)
 
+Persist **every field pulled** into the normalized `teams-raw.json` — these responses are expensive to
+collect, so keep all of it even when the immediate next stage does not consume it. Each normalized
+thread record should carry at least:
+
+```json
+{
+  "threadId": "...",
+  "postAuthor": "...",
+  "postTime": "...",
+  "lastModifiedTime": "...",
+  "subject": "...",
+  "body": "...",
+  "webUrl": "...",
+  "githubLinks": ["..."],
+  "replyCount": 12,
+  "humanReplyCount": 9,
+  "botReplyCount": 3,
+  "replyCountCapped": false,
+  "createdInPeriod": true,
+  "source": "...",
+  "replies": [
+    { "id": "...", "author": "...", "kind": "human", "time": "...", "body": "...", "githubLinks": ["..."] }
+  ]
+}
+```
+
+The `replies` array holds the full stripped body of every reply (human and bot). Later stages may read
+only `humanReplyCount`, but the bodies stay available for resolution/outcome analysis without a re-pull.
+
 If a response cannot be returned as strict JSON, save the raw response first and then create a normalized JSON file beside it.
 
 ### Shared "SDK release support" channel (not language-specific)
@@ -298,8 +331,9 @@ questions), so its threads do **not** map 1-to-1 to a single language or AutoPR.
   per-language channels, including the completeness guard (busy channel — the single
   page carries an `@odata.nextLink`, so verify by re-issuing with later `gt`
   thresholds and unioning by id; later thresholds must surface no new ids).
-- Persist to `details\sdk-release-support\teams-raw.json` (normalized thread list with
-  `subject`, `body`, `humanReplyCount`, `botReplyCount`).
+- Persist to `details\sdk-release-support\teams-raw.json` (same full normalized shape as the
+  per-language `teams-raw.json` above, including the `replies` array with every reply body —
+  `subject`, `body`, `replies`, `humanReplyCount`, `botReplyCount`).
 
 Classify each thread in stage 2 into:
 - **service-attributable** — the body names a service via `[AutoPR <lib>]`, a provider
