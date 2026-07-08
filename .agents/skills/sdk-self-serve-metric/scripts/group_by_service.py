@@ -108,6 +108,42 @@ NAMED_KEYWORDS = {
 # Parenthetical contents that are not a service (dates handled separately).
 NON_SERVICE_PARENS = {"enum", "specmigration", "specmigrations"}
 
+# --- shared "SDK release support" channel (not language-specific) ---
+# Threads here are release-time help requests; some name a service already charted
+# this period (-> a 3rd release-support bar on that service), many name a service
+# with no in-period AutoPR/Teams activity or are general tooling/process (-> the
+# concise unattributed summary, kept out of the per-service bars).
+# Service names as they appear in release-support bodies -> canonical token (aligned
+# with the tokens the AutoPR/Teams passes already produce). "computevalidation" is the
+# brand name for the Microsoft.Validate RP, mapped to the report's microsoftvalidate.
+REL_KEYWORDS = {
+    "securityinsights": "securityinsights",
+    "cognitiveservices": "cognitiveservices",
+    "computevalidation": "microsoftvalidate",
+    "microsoftvalidate": "microsoftvalidate",
+    "managednetworkfabric": "managednetworkfabric",
+    "computebulkactions": "computebulkactions",
+    "horizondb": "horizondb",
+    "healthbot": "healthbot",
+    "mysqlflexibleservers": "mysqlflexibleservers",
+}
+
+
+def service_from_release_support(body, known):
+    """Attribute a release-support thread body to a service, or None (-> tooling)."""
+    svc = service_from(body)  # explicit [AutoPR <lib>]
+    if svc:
+        return svc
+    low = re.sub(r"[^a-z0-9]", "", (body or "").lower())
+    cand = dict(REL_KEYWORDS)
+    for tok in known:
+        cand.setdefault(tok, tok)
+    best = None
+    for kw, canon in cand.items():
+        if len(kw) >= 6 and kw in low and (best is None or len(kw) > best[0]):
+            best = (len(kw), canon)
+    return best[1] if best else None
+
 
 def is_bot(author):
     return author is None or author in EXCLUDE_EXACT or author.endswith("[bot]")
@@ -180,7 +216,8 @@ def service_from_reason(reason, known):
 
 
 def discover_langs(details_dir):
-    present = [d for d in os.listdir(details_dir) if os.path.isdir(os.path.join(details_dir, d))]
+    present = [d for d in os.listdir(details_dir)
+               if os.path.isdir(os.path.join(details_dir, d)) and d != "sdk-release-support"]
     ordered = [k for k in ORDER if k in present]
     ordered += sorted(k for k in present if k not in ORDER)
     return ordered
@@ -199,6 +236,8 @@ langs = [l for l in discover_langs(det) if l not in EXCLUDE_LANGS]
 
 # service -> lang -> {"autopr": int, "teams": int}
 data = {}
+# service -> int  (release-support human replies; not language-specific)
+relsupport_data = {}
 
 
 def bump(service, lang, channel, amount):
@@ -235,29 +274,72 @@ for lang in langs:
         bump(svc, lang, "teams", n)
 
 
+# Pass 3: shared "SDK release support" channel (not language-specific). Split the
+# threads into two groups against the services that already exist in the chart from
+# AutoPR + per-language Teams (the period-anchored "group_by_service" vocabulary):
+#   - found    -> a service already charted this period: add as a 3rd release-support
+#                 bar for that service (relsupport_data).
+#   - not found -> either a service with no AutoPR/Teams activity in the period (e.g.
+#                 a release happening long before/after generation) or general
+#                 release tooling/process: collected for a concise report section.
+# This keeps out-of-period releases and platform-tooling out of the per-service bars,
+# where they cannot be time-aligned with the created-in-period cohort.
+charted_services = set(data.keys())  # services from AutoPR (pass 1) + Teams (pass 2)
+release_support_unattributed = []
+_rel_path = os.path.join(det, "sdk-release-support", "teams-raw.json")
+if os.path.exists(_rel_path):
+    rel_vocab = set(charted_services)
+    for t in load(_rel_path):
+        if not t.get("createdInPeriod", True):
+            continue
+        n = t.get("humanReplyCount", 0) or 0
+        if n <= 0:
+            continue
+        text = (t.get("subject") or "") + " " + (t.get("body") or "")
+        svc = service_from_release_support(text, rel_vocab)
+        if svc:
+            svc = PERIOD_ALIAS.get(svc, svc)
+        if svc and svc in charted_services:
+            relsupport_data[svc] = relsupport_data.get(svc, 0) + n
+        else:
+            release_support_unattributed.append({
+                "threadId": t.get("threadId"),
+                "subject": (t.get("subject") or "").strip() or "(no subject)",
+                "humanReplyCount": n,
+                "resolvedService": svc,  # a service, but not charted this period, or None
+                "category": "named-service-not-in-period-cohort" if svc else "tooling/process",
+            })
+
+
 def svc_total(svc):
-    return sum(v["autopr"] + v["teams"] for v in data[svc].values())
+    return sum(v["autopr"] + v["teams"] for v in data[svc].values()) + relsupport_data.get(svc, 0)
 
 
-# Real services ranked by total communication; the unattributed-triage bucket
-# is kept aside so it is neither ranked among services nor folded into (others).
-real = sorted((s for s in data if s != UNATTRIBUTED), key=lambda s: (-svc_total(s), s))
+# Real services ranked by total communication; the unattributed-triage and the
+# release-support-tooling buckets are kept aside so they are neither ranked among
+# services nor folded into (others).
+SPECIAL = {UNATTRIBUTED}
+real = sorted((s for s in data if s not in SPECIAL), key=lambda s: (-svc_total(s), s))
 
 if TOP and len(real) > TOP:
     keep = real[:TOP]
     rest = real[TOP:]
     merged = {}
+    merged_rel = 0
     for s in rest:
         for lang, v in data[s].items():
             merged.setdefault(lang, {"autopr": 0, "teams": 0})
             merged[lang]["autopr"] += v["autopr"]
             merged[lang]["teams"] += v["teams"]
-    if merged:
+        merged_rel += relsupport_data.get(s, 0)
+    if merged or merged_rel:
         data["(others)"] = merged
+        if merged_rel:
+            relsupport_data["(others)"] = merged_rel
         keep.append("(others)")
     real = keep
 
-services = real + ([UNATTRIBUTED] if UNATTRIBUTED in data else [])
+services = real + [s for s in (UNATTRIBUTED,) if s in data]
 
 os.makedirs(res, exist_ok=True)
 out_json = {
@@ -266,9 +348,10 @@ out_json = {
     "services": [
         {
             "service": s,
-            "total": sum(v["autopr"] + v["teams"] for v in data[s].values()),
+            "total": svc_total(s),
             "autoprTotal": sum(v["autopr"] for v in data[s].values()),
             "teamsTotal": sum(v["teams"] for v in data[s].values()),
+            "releaseSupportTotal": relsupport_data.get(s, 0),
             "byLanguage": {DISPLAY_NAMES.get(l, l): data[s][l] for l in langs if l in data[s]},
         }
         for s in services
@@ -277,13 +360,43 @@ out_json = {
 json.dump(out_json, open(os.path.join(res, f"service-communication-{periodKey}{SUFFIX}.json"), "w", encoding="utf-8"),
           indent=2, ensure_ascii=False)
 
+# ---- release-support threads that could NOT be tied to a charted service ----
+# These are release/tooling efforts that don't time-align with the created-in-period
+# cohort; summarize them in a small report section instead of forcing a bar.
+if release_support_unattributed:
+    ru = sorted(release_support_unattributed, key=lambda r: -r["humanReplyCount"])
+    by_cat = {}
+    for r in ru:
+        by_cat.setdefault(r["category"], {"threads": 0, "humanReplies": 0})
+        by_cat[r["category"]]["threads"] += 1
+        by_cat[r["category"]]["humanReplies"] += r["humanReplyCount"]
+    ru_json = {
+        "periodKey": periodKey,
+        "note": "SDK release-support threads not attributable to a service charted "
+                "this period; kept out of the per-service bars (release/tooling effort "
+                "is time-decoupled from the created-in-period AutoPR cohort).",
+        "totalThreads": len(ru),
+        "totalHumanReplies": sum(r["humanReplyCount"] for r in ru),
+        "byCategory": by_cat,
+        "threads": ru,
+    }
+    json.dump(ru_json, open(os.path.join(res, f"release-support-unattributed-{periodKey}{SUFFIX}.json"), "w", encoding="utf-8"),
+              indent=2, ensure_ascii=False)
+
 # ---- grouped stacked bar chart ----
+have_rel = any(relsupport_data.get(s, 0) for s in services)
+REL_COLOR = "#319795"  # teal, distinct from the language palette
 x = np.arange(len(services))
-bw = 0.38
-fig_w = max(12, len(services) * 0.85)
+bw = 0.27 if have_rel else 0.38
+fig_w = max(12, len(services) * (1.0 if have_rel else 0.85))
 fig, ax = plt.subplots(figsize=(fig_w, 7))
 
-for offset, channel, hatch in ((-bw / 2 - 0.02, "autopr", None), (bw / 2 + 0.02, "teams", "//")):
+if have_rel:
+    autopr_off, teams_off, rel_off = -(bw + 0.03), 0.0, (bw + 0.03)
+else:
+    autopr_off, teams_off, rel_off = -bw / 2 - 0.02, bw / 2 + 0.02, None
+
+for offset, channel, hatch in ((autopr_off, "autopr", None), (teams_off, "teams", "//")):
     bottoms = np.zeros(len(services))
     for lang in langs:
         vals = np.array([data[s].get(lang, {}).get(channel, 0) for s in services], dtype=float)
@@ -298,20 +411,35 @@ for offset, channel, hatch in ((-bw / 2 - 0.02, "autopr", None), (bw / 2 + 0.02,
         if tot > 0:
             ax.text(x[i] + offset, tot + 0.3, str(int(tot)), ha="center", va="bottom", fontsize=7)
 
+if have_rel:
+    rel_vals = np.array([relsupport_data.get(s, 0) for s in services], dtype=float)
+    ax.bar(x + rel_off, rel_vals, bw, color=REL_COLOR, edgecolor="white",
+           linewidth=0.4, hatch="xx")
+    for i, tot in enumerate(rel_vals):
+        if tot > 0:
+            ax.text(x[i] + rel_off, tot + 0.3, str(int(tot)), ha="center", va="bottom", fontsize=7)
+
 ax.set_xticks(x)
 ax.set_xticklabels(services, rotation=45, ha="right", fontsize=8)
 ax.set_ylabel("Human communication count")
+_channels_line = ("Left = AutoPR comments; middle (hatched //) = per-language Teams replies; "
+                  "right (teal xx) = SDK release-support replies") if have_rel else \
+                 "Left bar = AutoPR human comments; right (hatched) bar = Teams human replies"
 ax.set_title(f"AutoPR comments and Teams replies by service, stacked by language ({periodKey})"
              + (f" — excluding {', '.join(DISPLAY_NAMES.get(l, l) for l in EXCLUDE_LANGS)}" if EXCLUDE_LANGS else "")
-             + "\nLeft bar = AutoPR human comments; right (hatched) bar = Teams human replies")
+             + "\n" + _channels_line)
 
 lang_handles = [plt.Rectangle((0, 0), 1, 1, color=COLORS.get(l, "#888")) for l in langs]
 lang_labels = [DISPLAY_NAMES.get(l, l) for l in langs]
 ch_handles = [plt.Rectangle((0, 0), 1, 1, facecolor="#bbb"),
               plt.Rectangle((0, 0), 1, 1, facecolor="#bbb", hatch="//")]
+ch_labels = ["AutoPR comments", "Teams replies"]
+if have_rel:
+    ch_handles.append(plt.Rectangle((0, 0), 1, 1, facecolor=REL_COLOR, hatch="xx"))
+    ch_labels.append("Release-support replies")
 leg1 = ax.legend(lang_handles, lang_labels, title="Language", loc="upper right")
 ax.add_artist(leg1)
-ax.legend(ch_handles, ["AutoPR comments", "Teams replies"], title="Channel", loc="upper right",
+ax.legend(ch_handles, ch_labels, title="Channel", loc="upper right",
           bbox_to_anchor=(1.0, 0.72))
 
 fig.tight_layout()
@@ -322,4 +450,11 @@ print("DONE", periodKey, "services:", len(services), "langs:", langs)
 for s in services:
     print(f"  {s}: total={svc_total(s) if s in data else '-'} "
           f"autopr={sum(v['autopr'] for v in data[s].values())} "
-          f"teams={sum(v['teams'] for v in data[s].values())}")
+          f"teams={sum(v['teams'] for v in data[s].values())} "
+          f"relsupport={relsupport_data.get(s, 0)}")
+if release_support_unattributed:
+    ru = release_support_unattributed
+    print("release-support UNATTRIBUTED: %d threads, %d human replies"
+          % (len(ru), sum(r["humanReplyCount"] for r in ru)))
+    for r in sorted(ru, key=lambda r: -r["humanReplyCount"]):
+        print(f"    [{r['category']}] h={r['humanReplyCount']} svc={r['resolvedService']} :: {r['subject'][:70]}")

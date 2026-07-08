@@ -122,3 +122,38 @@ Write `progress\stage-2.md` with:
 - edge cases
 - threads kept only because of linked PR evidence
 - threads kept because of `Azure/azure-rest-api-specs` validation-failure evidence
+
+## Stage 2.5 - Split the shared "SDK release support" channel
+
+The shared **"SDK release support"** channel (collected in Stage 1 to
+`details\sdk-release-support\teams-raw.json`) is **not** language-specific and is
+**not** 1:1 with the created-in-period AutoPR cohort. Its threads are release-time
+help requests: some name a service, many are general tooling/process (release
+planner, agent auth, doc-publishing). Release effort is also **time-decoupled** from
+the base metric — a thread may reference a service whose AutoPR was created weeks
+earlier or that has no in-period AutoPR at all. Do **not** fold this channel into the
+per-service review bars wholesale.
+
+Instead, split it against the services already charted this period:
+
+1. Build `charted_services` = the set of service tokens produced by the AutoPR pass
+   (Stage 1 comments) plus the per-language Teams pass (Stage 2). This is the
+   **period-anchored** vocabulary.
+2. For each release-support thread, resolve its service (via `[AutoPR <lib>]`, a
+   known service-name keyword in the subject+body, or a longest-match against
+   `charted_services`).
+   - **Found** (resolves to a service in `charted_services`) -> feeds a **3rd
+     "release-support" bar** on that service in Stage 3.
+   - **Not found** (resolves to a service with no in-period AutoPR/Teams activity, or
+     to no service at all) -> goes to a concise **unattributed summary**, never a bar.
+3. The not-found threads are tagged with a `category`:
+   - `named-service-not-in-period-cohort` — names a real service, but it is outside
+     the period's created-in-period cohort (temporal mismatch).
+   - `tooling/process` — general release tooling/process, not a specific service.
+
+This split is implemented inline by `scripts/group_by_service.py` (Stage 3), which
+reads `details\sdk-release-support\teams-raw.json`, emits the found threads as the 3rd
+bar, and writes the not-found threads to
+`result\release-support-unattributed-<periodKey>.json` (total human replies, per-
+`category` counts, and per-thread subject + humanReplyCount + resolvedService). No
+separate stage-2.5 file is produced; the split is auditable from that JSON.

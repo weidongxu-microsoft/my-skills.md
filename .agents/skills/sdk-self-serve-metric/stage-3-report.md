@@ -279,6 +279,11 @@ Write a human-readable summary to:
 result\<language-key>\report.md
 ```
 
+**Be concise.** The whole report must be short and scannable — prefer short factual
+sentences, bullets, and tables over prose. Omit filler, restatement, and background
+the reader already knows. Every section below (and any optional subsection) is
+subject to this: report the number and the takeaway, not a narrative around it.
+
 Each per-language report should include:
 - reporting period
 - language name and source entry used
@@ -293,7 +298,21 @@ Each per-language report should include:
 - whether retained Teams threads include `Azure/azure-rest-api-specs` validation-failure discussions
 - assumptions and exclusions
 
-Keep the narrative concise and evidence-based. If some source data was incomplete, state that clearly in the report.
+If the optional service breakdown was run and the shared "SDK release support"
+channel was collected, also add a **concise** subsection, e.g.
+"SDK release support (shared channel)", that:
+- notes the service-attributable threads are folded into the per-service 3rd
+  release-support bar
+- summarizes `result\release-support-unattributed-<periodKey>.json` in a few lines:
+  total unattributed human replies, the `named-service-not-in-period-cohort` vs
+  `tooling/process` split, and the top 2-3 threads by human reply count
+- states the temporal-alignment caveat: this channel's release/tooling effort is
+  decoupled in time from the created-in-period AutoPR cohort, so the unattributed
+  part is reported as context only, not as a per-service review metric
+
+Keep the narrative concise and evidence-based (see the **Be concise** directive
+above — it governs the entire report, not just this section). If some source data was
+incomplete, state that clearly in the report.
 
 ## Error handling
 

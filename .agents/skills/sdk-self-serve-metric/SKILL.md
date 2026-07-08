@@ -193,6 +193,18 @@ Notes on the service token:
   script folds `<from>` into `<to>` for that run only (e.g. June 2026 merges
   `monitoraccounts` into `monitorworkspaces`).
 
+The shared **"SDK release support"** channel (collected in Stage 1 to
+`details/sdk-release-support/teams-raw.json`) is integrated here as a **3rd bar**,
+but only after the Stage 2.5 split (see `stage-2-filter-teams.md`):
+- Threads that resolve to a service already charted this period (present in the
+  AutoPR + per-language Teams vocabulary) render as a **teal `xx` release-support
+  bar** on that service, alongside the AutoPR (left) and Teams (middle, `//`) bars.
+- Threads that resolve to an out-of-period service or to general tooling/process are
+  **not** charted; they are written to
+  `result/release-support-unattributed-<yyyymm>.json` (total human replies, per-
+  `category` split, per-thread detail) for a concise report section. This keeps the
+  time-decoupled release/tooling effort out of the created-in-period review bars.
+
 ## Period handling
 
 At the start of the workflow, normalize the requested period into:
