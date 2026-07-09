@@ -67,6 +67,8 @@ Successful completion produces:
 - an optional PowerPoint deck when the user explicitly asks for one
 - an optional per-service communication breakdown when the user asks to group by service (see "Optional: service breakdown")
 
+For a high-level, PM-facing view of which information source each report/chart is based on, see [docs/data-flow.md](./docs/data-flow.md).
+
 ## Success criteria
 
 The skill is complete only when:
