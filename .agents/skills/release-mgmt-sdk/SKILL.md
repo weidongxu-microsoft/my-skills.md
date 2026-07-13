@@ -158,12 +158,21 @@ Look for a `release_{safeName}` parameter in `templateParameters`. The `safeName
 
 If the Contribution API returns no `release_*` parameter, optionally cross-check the `ci.yml` referenced by `yamlFilename`, but prefer the Contribution API result for queue-time parameter discovery.
 
+**Enumerate ALL `release_*` parameters, not just the target.** A service pipeline can build several artifacts, each with its own `release_{safeName}` parameter, and **their defaults are not always `false`**. For example, `sdk/batch/ci.yml` defines `release_azurecomputebatch` with `default: true`. If you queue with only the target set to `"true"`, every other `release_*` parameter falls back to its ci.yml default, so a sibling defaulting to `true` will be released unintentionally (and can fail the `Releasing` stage with "already been deployed", or worse, publish an artifact you did not intend to release).
+
+Therefore, from the `templateParameters` (and/or `ci.yml`), list **every** `release_*` parameter. The target is the one matching your module's `safeName`; all others are non-target.
+
 ### Run the release pipeline
 
 1. If the `ci.yml` has a `release_{safeName}` parameter:
    - Queue with `templateParameters`:
      ```powershell
-     $body = @{ templateParameters = @{ release_{safeName} = "true" } } | ConvertTo-Json -Depth 5
+     $body = @{ templateParameters = @{
+         release_{targetSafeName} = "true"
+         # explicitly pin ALL other release_* params to false (never rely on their ci.yml defaults):
+         release_{otherSafeName1} = "false"
+         release_{otherSafeName2} = "false"
+     } } | ConvertTo-Json -Depth 5
      $run = Invoke-RestMethod -Method Post -Uri 'https://dev.azure.com/azure-sdk/internal/_apis/pipelines/{id}/runs?api-version=7.1' -Headers @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" } -Body $body
      ```
 2. If the `ci.yml` has **no** `release_` parameters:
@@ -178,7 +187,8 @@ If the Contribution API returns no `release_*` parameter, optionally cross-check
    $build = Invoke-RestMethod -Uri $buildUri -Headers @{ Authorization = "Bearer $token" } -Method Get
    $build.templateParameters | ConvertTo-Json
    ```
-   - If a `release_{safeName}` parameter exists in `ci.yml` but is NOT set to `"true"` in the retrieved build, the run was queued incorrectly
+   - The target `release_{safeName}` must be `"true"` and **every other `release_*` parameter must be `false`** in the retrieved build. Note the casing: values you explicitly set appear lowercase (`"true"`/`"false"`), whereas a parameter left at its pipeline default appears capitalized (`"True"`/`"False"`) — a capitalized `"True"` on a non-target parameter means it defaulted in and the run is wrong.
+   - If any non-target `release_*` is not `false`, or the target is not `"true"`, the run was queued incorrectly
    - Cancel the incorrect run and re-queue with correct parameters
 4. Open the pipeline run in the browser
 5. Wait for completion
