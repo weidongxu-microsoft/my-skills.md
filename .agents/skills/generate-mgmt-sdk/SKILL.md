@@ -119,8 +119,10 @@ Pipeline `7421` template parameters (from `eng/pipelines/spec-gen-sdk.yml`):
 | `ConfigType` | `TypeSpec` |
 | `ConfigPath` | tspconfig.yaml relative path |
 | `ApiVersion` | `none` |
-| `SdkReleaseType` | `beta` |
+| `SdkReleaseType` | `none` |
 | `CreatePullRequest` | `true` |
+
+> **`SdkReleaseType`**: use `none` generally (for both initial generation and regeneration) — the pipeline decides `beta` vs `stable` automatically from whether the api-version is a preview. Only pass an explicit `beta`/`stable` to override that automatic decision.
 
 Build the specs commit into `resources.repositories.self` so the pipeline checks out the
 specs PR HEAD. Write the body to a temp file to avoid quoting issues, then POST:
@@ -160,7 +162,7 @@ az rest --method post `
 From the POST response, confirm:
 
 - `templateParameters` match the intended `ConfigPath`, `SdkRepoBranch`, and
-  `CreatePullRequest = true` (`ApiVersion = none`, `SdkReleaseType = beta`)
+  `CreatePullRequest = true` (`ApiVersion = none`, `SdkReleaseType = none`)
 - `resources.repositories.self.version` equals `commit-sha`
 - `state` is `inProgress`
 
