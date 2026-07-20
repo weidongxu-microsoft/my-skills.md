@@ -103,4 +103,16 @@ If the PR has failed checks, refer to [Inspect Failed Checks](./inspect-failed-c
 
 ## Review the changes of the PR
 
-If checks are good, and the PR is not approved by me (result of `gh api user --jq .login`), refer to [Review Changes](./review-changes.md) to review the chanages of the PR.
+If checks are good, and the PR's current HEAD SHA is not yet approved by anyone, refer to [Review Changes](./review-changes.md) to review the chanages of the PR.
+
+Before approving, open the PR in the browser for a manual double-check (`gh pr view <PR_NUMBER> --repo Azure/azure-sdk-for-java --web`).
+
+Only approve if the HEAD SHA has no `APPROVED` review (i.e. no approval whose `commit_id` matches the HEAD SHA):
+
+```bash
+# HEAD SHA
+gh pr view <PR_NUMBER> --json headRefOid --repo Azure/azure-sdk-for-java --jq '.headRefOid'
+# Reviewers who APPROVED and the commit each approval targeted
+gh api repos/Azure/azure-sdk-for-java/pulls/<PR_NUMBER>/reviews --paginate \
+  --jq '.[] | select(.state == "APPROVED") | "\(.user.login) \(.commit_id)"'
+```
