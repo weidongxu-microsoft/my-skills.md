@@ -41,6 +41,32 @@ Major review triggers include:
 - return type changes on existing methods;
 - new generated headers or response types that imply wrong LRO semantics.
 
+## Write a review summary before approval
+
+Before approving, capture a short summary that includes:
+
+- package name
+- release type (stable or beta)
+- api-version from `CHANGELOG.md`, or `apiVersions` in `src/main/resources/META-INF/<module>_metadata.json` if needed
+- changelog summary (release version/date and key additions or modifications)
+- whether breaking changes were detected
+- any risk flags or concerns
+
+Use this shape:
+
+```text
+AutoPR review summary
+- Package: <package-name>
+- Release type: <stable|beta>
+- api-version: <api-version>
+- CHANGELOG: <version> (<date>)
+  - Features added: <summary>
+  - Modified: <summary>
+- Breaking changes: <none|summary>
+- Risk flags: <none|summary>
+- Decision: <approve|do not approve>
+```
+
 ## Ask before approval
 
 If you think the PR can be approved, ask the user for confirmation before taking action.
