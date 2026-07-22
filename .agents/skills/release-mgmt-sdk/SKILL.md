@@ -98,7 +98,11 @@ Use this when the user asks to release an SDK.
 
 ### Find the service pipeline
 
-Find pipeline:
+First check whether a module-specific pipeline exists for the service:
+
+`java - azure-resourcemanager-{service}`
+
+If it exists, use that pipeline. Otherwise, fall back to:
 
 `java - {service}`
 
