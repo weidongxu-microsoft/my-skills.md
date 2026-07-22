@@ -1,5 +1,11 @@
 Be concise when writing markdown or other documents, including issue and PR descriptions.
 
+# Memory
+
+Before starting a complex task, search memory first (use the `memory` skill / `.memory/`
+folder) for relevant prior findings, decisions, and conventions. Save durable, non-sensitive
+findings back to memory when a task uncovers something worth remembering.
+
 # Shorthand
 
 "routine work" means do these tasks
