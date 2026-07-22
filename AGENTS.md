@@ -1,3 +1,5 @@
+Be concise when writing markdown or other documents, including issue and PR descriptions.
+
 # Shorthand
 
 "routine work" means do these tasks
