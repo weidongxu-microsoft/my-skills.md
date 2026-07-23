@@ -39,6 +39,7 @@ Automated PR review progress
 - [ ] Inspect mergeability
 - [ ] Inspect checks (CI results)
 - [ ] Review the changes of the PR
+- [ ] Write a summary of the review feedback. If you find the PR good to approve, open the PR in the browser (`gh pr view <PR_NUMBER> --repo Azure/azure-sdk-for-java --web`) for a manual double-check, then ask the user before approving
 - [ ] Save review progress to memory
 ```
 
