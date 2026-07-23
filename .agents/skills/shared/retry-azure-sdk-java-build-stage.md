@@ -25,7 +25,7 @@ Request body:
 Authentication details:
 - Azure DevOps resource ID for token acquisition: `499b84ac-1321-427f-aa17-267ca6975798`
 - Use `az rest` first.
-- If `az rest` fails with a JSON parsing error such as `TF400898` / `JsonReaderException`, use `curl` with a bearer token from `az account get-access-token`.
+- If `az rest` fails with a JSON parsing error such as `TF400898` / `JsonReaderException` (common on Windows/PowerShell, where the inline `--body` JSON gets mangled), use `curl` with a bearer token from `az account get-access-token`. Write the JSON body to a file and pass it via `--data "@<file>"` to avoid shell escaping issues. A successful retry returns an empty 2xx response (no body).
 
 ## Commands
 
@@ -38,14 +38,16 @@ az rest --resource 499b84ac-1321-427f-aa17-267ca6975798 \
   --headers "Content-Type=application/json" \
   --body '{"state":"retry","forceRetryAllJobs":false}'
 
-# If az rest hits TF400898 / JsonReaderException, get a bearer token:
-az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv
+# If az rest hits TF400898 / JsonReaderException (typical on Windows), use curl with a body file:
+token=$(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
+# Write the body to a file (PowerShell: Set-Content -Path retry.json -Value '{"state":"retry","forceRetryAllJobs":false}' -NoNewline)
+echo '{"state":"retry","forceRetryAllJobs":false}' > retry.json
 
-# Then re-run the PATCH with curl using that token
+# Then re-run the PATCH with curl, passing the body via a file (@) to avoid escaping problems
 curl -sS -X PATCH \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  --data "{\"state\":\"retry\",\"forceRetryAllJobs\":false}" \
+  --data "@retry.json" \
   "https://dev.azure.com/azure-sdk/public/_apis/build/builds/<build-id>/stages/Build?api-version=7.1"
 
 gh pr checks <pr-number> --watch --fail-fast --repo Azure/azure-sdk-for-java
