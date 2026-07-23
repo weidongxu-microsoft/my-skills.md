@@ -1,4 +1,6 @@
-Be concise when writing markdown or other documents, including issue and PR descriptions.
+# Writing docs
+
+When writing docs or markdown, always be concise. This includes issue and PR descriptions.
 
 # Memory
 
